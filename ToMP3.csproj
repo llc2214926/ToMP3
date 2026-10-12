@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ToMP3</RootNamespace>
+    <AssemblyName>ToMP3</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.3" />
+  </ItemGroup>
+
+  <!-- 窗口/任务栏图标（Win/Linux 用；PNG 直接嵌进程序集） -->
+  <ItemGroup>
+    <Compile Remove="checks/**" />
+    <AvaloniaResource Include="Assets/icon.png" />
+    <!-- 关于窗口与发布包读取同一份版本信息，避免手动维护两份版本号。 -->
+    <EmbeddedResource Include="Info.plist" LogicalName="ToMP3.Info.plist" />
+  </ItemGroup>
+
+  <!-- 格式转 mp3：vendor 的两个单文件 arm64 可执行（都 MIT）——
+       ncmdump 管 .ncm（会把封面/标签写进产物），um 管其余各家私有加密格式。
+       运行时按 AppContext.BaseDirectory/Assets/<名字>/<名字> 找，publish 进 bundle 后相对路径不变。 -->
+  <ItemGroup>
+    <Content Include="Assets/ncmdump/**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets/um/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- publish 到 ToMP3.app/Contents/MacOS 后回填 bundle 里 Contents/ 下的两样东西：
+       Info.plist 与 Dock 图标 icon.icns（CFBundleIconFile 指到它，放 Contents/Resources/）。 -->
+  <Target Name="CopyBundleFiles" AfterTargets="Publish" Condition="$(PublishDir.Contains('ToMP3.app'))">
+    <Copy SourceFiles="Info.plist" DestinationFiles="$(PublishDir)../Info.plist" />
+    <Copy SourceFiles="Assets/icon.icns" DestinationFiles="$(PublishDir)../Resources/icon.icns" />
+  </Target>
+
+</Project>

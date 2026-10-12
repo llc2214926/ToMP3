@@ -1,0 +1,115 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ToMP3.App" Name="ToMP3"
+             RequestedThemeVariant="Light">
+
+  <!-- 应用级 NativeMenu 显示在 macOS 左侧应用菜单，保留系统隐藏/退出项。 -->
+  <NativeMenu.Menu>
+    <NativeMenu>
+      <NativeMenuItem Header="关于 ToMP3" Click="OnAbout" />
+    </NativeMenu>
+  </NativeMenu.Menu>
+
+  <Application.Resources>
+
+    <!-- ToMP3：冷白背景、蓝色主操作、低对比度边框。 -->
+    <SolidColorBrush x:Key="BrushPrimary"        Color="#2563EB" />
+    <SolidColorBrush x:Key="BrushPrimaryHover"   Color="#1D4ED8" />
+    <SolidColorBrush x:Key="BrushPrimaryPressed" Color="#1E40AF" />
+    <SolidColorBrush x:Key="BrushDanger"         Color="#DC2626" />
+    <SolidColorBrush x:Key="BrushDangerHover"    Color="#B91C1C" />
+    <SolidColorBrush x:Key="BrushDangerPressed"  Color="#991B1B" />
+
+    <SolidColorBrush x:Key="BrushWindowBg" Color="#F5F7FB" />
+    <SolidColorBrush x:Key="BrushCard"     Color="#FFFFFF" />
+    <SolidColorBrush x:Key="BrushBorder"   Color="#E4E9F1" />
+    <SolidColorBrush x:Key="BrushHeaderBg" Color="#F8FAFD" />
+
+    <!-- 文字 -->
+    <SolidColorBrush x:Key="BrushTextPrimary"   Color="#111827" />
+    <SolidColorBrush x:Key="BrushTextSecondary" Color="#6B7280" />
+
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+    <!-- DataGrid 的主题需要单独引入 -->
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
+
+    <!-- 基础按钮包含焦点、悬停、按下和禁用状态，避免原生灰块外观。 -->
+    <Style Selector="Button">
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="14,8" />
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Background" Value="White" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#EDF2FA" />
+      <Setter Property="BorderBrush" Value="#CBD7E8" />
+    </Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#E2EAF6" />
+    </Style>
+    <Style Selector="Button.quiet">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
+    </Style>
+
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="{StaticResource BrushPrimary}" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BrushPrimaryHover}" />
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BrushPrimaryPressed}" />
+    </Style>
+
+
+    <Style Selector="Button.danger">
+      <Setter Property="Background" Value="{StaticResource BrushDanger}" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BrushDangerHover}" />
+    </Style>
+    <Style Selector="Button.danger:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource BrushDangerPressed}" />
+    </Style>
+
+    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#EDF0F5" />
+      <Setter Property="Foreground" Value="#8D96A6" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <!-- ▍输入控件：统一圆角与内边距 -->
+    <Style Selector="TextBox">
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="8,6" />
+    </Style>
+    <Style Selector="TextBox.output">
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="0,6" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- ▍DataGrid 表头：浅灰底 + 加粗 -->
+    <Style Selector="DataGridColumnHeader">
+      <Setter Property="Background" Value="{StaticResource BrushHeaderBg}" />
+      <Setter Property="Foreground" Value="#4B5563" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+  </Application.Styles>
+</Application>

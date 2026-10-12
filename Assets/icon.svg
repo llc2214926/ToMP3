@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512">
+  <!-- ToMP3 图标：深蓝圆角方块 + 环形转换箭头 + 白色音符。跟界面主色 #2563EB / #16406B 一套 -->
+  <defs>
+    <linearGradient id="bg" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#3C7EE6"/>
+      <stop offset="0.55" stop-color="#2461BE"/>
+      <stop offset="1" stop-color="#123A63"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.30" cy="0.08" r="0.95">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#C3DBFF"/>
+      <stop offset="0.5" stop-color="#8FB8FA"/>
+      <stop offset="1" stop-color="#5C93EE"/>
+    </linearGradient>
+    <linearGradient id="note" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#DCE8FF"/>
+    </linearGradient>
+    <filter id="drop" x="-35%" y="-35%" width="170%" height="170%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#081B33" flood-opacity="0.26"/>
+    </filter>
+  </defs>
+
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"/>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#gloss)"/>
+  <rect x="17.5" y="17.5" width="477" height="477" rx="110.5"
+        fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="3"/>
+
+  <!-- 环形转换箭头：两条 152° 弧（上下各一，各留 28° 缺口）+ 两枚切向箭头，组成「转换」风车 -->
+  <g stroke="url(#ring)" stroke-width="24" stroke-linecap="butt" fill="none">
+    <path d="M106.6 218.7 A154 154 0 0 1 405.4 218.7"/>
+    <path d="M405.4 293.3 A154 154 0 0 1 106.6 293.3"/>
+  </g>
+  <path d="M383.6 222.1 L416.0 261.4 L426.2 211.5 Z" fill="#9FC3FA"/>
+  <path d="M128.4 289.9 L96.0 250.6 L85.8 300.5 Z" fill="#9FC3FA"/>
+
+  <!-- 白色音符 -->
+  <g filter="url(#drop)" transform="translate(12,-6)">
+    <ellipse cx="214" cy="338" rx="56" ry="43" transform="rotate(-20 214 338)" fill="url(#note)"/>
+    <rect x="258" y="142" width="26" height="200" rx="6" fill="url(#note)"/>
+    <path d="M284 142 C372 166 386 258 314 322 C356 252 348 196 284 180 Z" fill="url(#note)"/>
+  </g>
+</svg>
