@@ -8,7 +8,10 @@
     <RootNamespace>ToMP3</RootNamespace>
     <AssemblyName>ToMP3</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +19,13 @@
     <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.2.3" />
+  </ItemGroup>
+
+  <!-- DataGrid 11.2.3 内部仍按反射发现属性；保留它及绑定基础库，
+       不用隐藏裁剪警告换体积。应用自身由 partial 模式保留。 -->
+  <ItemGroup>
+    <TrimmerRootAssembly Include="Avalonia.Controls.DataGrid" />
+    <TrimmerRootAssembly Include="Avalonia.Base" />
   </ItemGroup>
 
   <!-- 窗口/任务栏图标（Win/Linux 用；PNG 直接嵌进程序集） -->

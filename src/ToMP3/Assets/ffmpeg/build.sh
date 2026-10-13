@@ -25,10 +25,28 @@ cd "$work/lame-3.100"
 make -j8
 make install
 cd "$work/ffmpeg-8.0.3"
+# 从固定版本的官方注册表保留全部内置音频解码器，避免手写格式白名单漏掉音频。
+# 封面仅需 PNG/JPEG/BMP；视频转码和字幕不属于本应用功能。
+# 8.0.3 的这八个音频解码器注册在 audio 区段之外，也必须保留。
+decoders=png,mjpeg,bmp,eightsvx_exp,eightsvx_fib,anull,comfortnoise,dvaudio,rka,s302m,speex
+audio=false
+while IFS= read -r line; do
+  case "$line" in
+    '/* audio codecs */') audio=true ;;
+    '/* subtitles */') break ;;
+  esac
+  if $audio && [[ "$line" =~ ff_([a-zA-Z0-9_]+)_decoder ]]; then
+    decoders+=,${BASH_REMATCH[1]}
+  fi
+done < libavcodec/allcodecs.c
+[[ "$decoders" == *',flac,'* && "$decoders" == *',vorbis,'* ]] || exit 1
 ./configure --prefix="$prefix" --cc=clang --arch=arm64 --target-os=darwin \
   --disable-autodetect --disable-network --disable-doc --disable-debug \
   --disable-shared --enable-static --disable-ffplay --enable-libmp3lame \
   --extra-cflags="-I$prefix/include" --extra-ldflags="-L$prefix/lib" \
+  --disable-decoders --enable-decoder="$decoders" --enable-zlib \
+  --disable-swscale --disable-filters \
+  --enable-filter=abuffer,abuffersink,aformat,anull,aresample,atrim,asetpts,sine \
   --disable-encoders --enable-encoder=libmp3lame,flac,pcm_s16le \
   --disable-muxers --enable-muxer=mp3,flac,null,hash \
   --disable-devices --enable-indev=lavfi

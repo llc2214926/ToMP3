@@ -3,6 +3,8 @@ FFmpeg 8.0.3 与 LAME 3.100
 本目录的 ffmpeg、ffprobe 为 macOS arm64 独立命令行工具，仅由 ToMP3 通过子进程调用。
 FFmpeg 和 libmp3lame 静态链接，动态依赖仅来自 macOS 系统库；运行不需要 Homebrew、额外 FFmpeg 或网络。
 本构建的 macOS 部署目标为 12.0。未启用 GPL 或 nonfree 组件。
+本构建仅用于音频转换：保留原有全部 211 个音频解码器和解封装器，去除无关视频/字幕解码器、视频滤镜和缩放库；保留 PNG/JPEG/BMP 封面支持及音频重采样。PNG 解码使用 macOS 系统 zlib。
+MP3 编码参数和标签映射未改变，已有 MP3 音轨仍直接复制；该工具不是通用视频转换器。升级后需比较音频解码器集合，并验证 FLAC、MP3、AAC、ALAC、Vorbis、Opus、PCM、WMA 及 PNG/JPEG 封面的真实转换。
 
 许可：
 - FFmpeg：Copyright (c) 2000-2026 the FFmpeg developers，LGPL-2.1-or-later，全文见 FFmpeg-LICENSE.txt。

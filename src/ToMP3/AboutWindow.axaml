@@ -29,7 +29,7 @@
                    Foreground="{StaticResource BrushTextSecondary}" />
       </StackPanel>
     </Border>
-    <Button Content="关闭" Classes="primary" HorizontalAlignment="Center" MinWidth="100"
+    <Button Content="关闭" Classes="primary" HorizontalAlignment="Center" MinWidth="112"
             IsDefault="True" IsCancel="True" Click="OnClose" />
   </StackPanel>
 </Window>

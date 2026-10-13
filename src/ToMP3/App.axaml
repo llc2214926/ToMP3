@@ -16,9 +16,6 @@
     <SolidColorBrush x:Key="BrushPrimary"        Color="#2563EB" />
     <SolidColorBrush x:Key="BrushPrimaryHover"   Color="#1D4ED8" />
     <SolidColorBrush x:Key="BrushPrimaryPressed" Color="#1E40AF" />
-    <SolidColorBrush x:Key="BrushDanger"         Color="#DC2626" />
-    <SolidColorBrush x:Key="BrushDangerHover"    Color="#B91C1C" />
-    <SolidColorBrush x:Key="BrushDangerPressed"  Color="#991B1B" />
 
     <SolidColorBrush x:Key="BrushWindowBg" Color="#F5F7FB" />
     <SolidColorBrush x:Key="BrushCard"     Color="#FFFFFF" />
@@ -36,15 +33,34 @@
     <!-- DataGrid 的主题需要单独引入 -->
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
 
-    <!-- 基础按钮包含焦点、悬停、按下和禁用状态，避免原生灰块外观。 -->
-    <Style Selector="Button">
-      <Setter Property="CornerRadius" Value="8" />
-      <Setter Property="Padding" Value="14,8" />
-      <Setter Property="MinHeight" Value="36" />
+    <!-- 复用 Fluent 交互模板，统一内容对齐和圆角焦点环。 -->
+    <Style Selector="Button, ToggleButton.quiet">
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="16,0" />
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="MinWidth" Value="76" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="Background" Value="White" />
       <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
-      <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}" />
+      <Setter Property="BorderBrush" Value="#D5DDE9" />
       <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="FocusAdorner">
+        <Template>
+          <Border BorderBrush="White" BorderThickness="1" CornerRadius="9" Margin="1">
+            <Border BorderBrush="#1D4ED8" BorderThickness="2" CornerRadius="8" />
+          </Border>
+        </Template>
+      </Setter>
+    </Style>
+    <Style Selector="Button.compact">
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="MinWidth" Value="72" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="CornerRadius" Value="8" />
     </Style>
     <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="#EDF2FA" />
@@ -54,42 +70,61 @@
       <Setter Property="Background" Value="#E2EAF6" />
     </Style>
     <Style Selector="Button.quiet">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
+      <Setter Property="Background" Value="#F1F4F9" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Foreground" Value="#475569" />
     </Style>
 
     <Style Selector="Button.primary">
       <Setter Property="Background" Value="{StaticResource BrushPrimary}" />
       <Setter Property="Foreground" Value="White" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushPrimary}" />
     </Style>
     <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{StaticResource BrushPrimaryHover}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushPrimaryHover}" />
     </Style>
     <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{StaticResource BrushPrimaryPressed}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BrushPrimaryPressed}" />
     </Style>
-
 
     <Style Selector="Button.danger">
-      <Setter Property="Background" Value="{StaticResource BrushDanger}" />
-      <Setter Property="Foreground" Value="White" />
-      <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="#FFF5F5" />
+      <Setter Property="Foreground" Value="#B91C1C" />
+      <Setter Property="BorderBrush" Value="#F4CACA" />
     </Style>
     <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource BrushDangerHover}" />
+      <Setter Property="Background" Value="#FEE2E2" />
+      <Setter Property="BorderBrush" Value="#ECAAAA" />
     </Style>
     <Style Selector="Button.danger:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource BrushDangerPressed}" />
+      <Setter Property="Background" Value="#FECACA" />
+    </Style>
+
+    <Style Selector="ToggleButton.quiet">
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Foreground" Value="#475569" />
+    </Style>
+    <Style Selector="ToggleButton.quiet:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.quiet:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#E8EFFB" />
+      <Setter Property="Foreground" Value="#1D4ED8" />
+      <Setter Property="BorderBrush" Value="#D1DEF8" />
+    </Style>
+    <Style Selector="ToggleButton.quiet:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#DCE7FB" />
     </Style>
 
     <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#EDF0F5" />
-      <Setter Property="Foreground" Value="#8D96A6" />
-      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Background" Value="#F0F2F6" />
+      <Setter Property="Foreground" Value="#8A94A4" />
+      <Setter Property="BorderBrush" Value="#E4E8EF" />
     </Style>
 
     <!-- ▍输入控件：统一圆角与内边距 -->

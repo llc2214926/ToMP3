@@ -10,7 +10,6 @@
 - 优先复用现有实现、标准库和已安装依赖。当前采用 Avalonia 窗口代码后置，不为小功能引入 MVVM 框架、依赖注入或通用插件层。
 - 用户已有改动必须保留；修复问题前追踪调用路径，在共用根因处修复。
 - 不修改系统代理、VPN 或网络代理配置，除非用户明确要求。
-- 删除文件或目录只能移动到废纸篓，同名时加时间戳；禁止使用 `rm`、`unlink` 等直接删除方式。
 
 ## 目录约定
 
@@ -26,6 +25,7 @@
 - 当前实际运行目标为 macOS Apple Silicon：原生文件选择器依赖 AppKit/Objective-C，内置转换工具为 macOS arm64。不能因 Avalonia 支持跨平台就宣称本项目已支持 Windows/Linux。
 - 产品要求：成功转换后的最终输出必须是实际 MP3 音频，不能仅把扩展名改为 `.mp3`。解密得到 FLAC、OGG、M4A 等格式时，必须继续转码为 MP3；本身已是 MP3 的无需重复编码。
 - 关于窗口和其他用户可见文案必须与 MP3 输出行为一致：不能宣称保留所有输入的原始音质，应说明非 MP3 转码有损，以及已内置转换工具。
+- 按钮样式统一在 `App.axaml`：常规按钮最小高度 40、紧凑按钮 32，内容水平和垂直居中；主操作蓝底、次操作浅底、停止操作浅红底。保留悬停、按下、禁用反馈与可见的圆角键盘焦点环，窗口内不重复覆盖公共按钮样式。
 - 转换流程：在独立临时目录解密，用 ffprobe 识别编码；MP3 音轨直接复制，其他编码通过 FFmpeg 的 libmp3lame（质量参数 `-q:a 2`）转为 MP3。实际解码校验通过后才替换目标文件，失败或取消保留旧目标；临时目录移入废纸篓。
 
 | 文件 | 职责 |
@@ -64,6 +64,10 @@
 下方测试命令仅在本地保留 `tests/ToMP3.Smoke/` 时可用；新克隆需通过实际运行应用验证，不应把缺少本地测试目录当作构建失败。
 
 发布包内置 FFmpeg 8.0.3、ffprobe 和静态链接的 LAME 3.100，并自包含 .NET 运行时。目标为 macOS 12+ Apple Silicon，用户无需安装 Homebrew、FFmpeg 或 .NET。运行时仅使用 `AppContext.BaseDirectory/Assets/ffmpeg/`，不从 PATH 或开发机路径回退；缺失文件应报告应用不完整。
+
+Release 默认启用 `PublishTrimmed=true`、`TrimMode=partial`；界面使用编译绑定，表格列声明 `Job` 类型和 `SortMemberPath`。保留 `Avalonia.Base` 与 `Avalonia.Controls.DataGrid`，避免库内反射入口被裁掉；不屏蔽 Avalonia 11.2.3 的第三方裁剪警告。改动裁剪配置后必须用实际发布的程序集和运行时验证表格数据、状态更新、排序、拖放、原生选择器取消及关于窗口，不能只另行裁剪测试程序。
+
+切换裁剪或工具配置时发布到全新目录，验证后替换 `dist/ToMP3.app`，避免覆盖发布残留旧程序集。FFmpeg 保留原有 211 个音频解码器、全部原有解封装器及 PNG/JPEG/BMP 封面支持，移除无关视频/字幕解码与视频滤镜；完整对应源码仍随包提供，不靠删除许可或源码缩小体积。
 
 升级工具时运行 `bash src/ToMP3/Assets/ffmpeg/build.sh artifacts/ffmpeg-build`（仅构建机需要 Xcode 工具），保留 `NOTICE.txt`、许可和完整对应源码；用 `otool -L` 确认只依赖 macOS 系统库，再运行转换检查。不得直接复制 Homebrew 的动态链接二进制。
 

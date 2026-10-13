@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:ToMP3"
         x:Class="ToMP3.AudioConvertWindow" x:Name="Root"
         Title="ToMP3"
         Width="980" Height="700" MinWidth="800" MinHeight="640"
@@ -17,22 +18,6 @@
     </Style>
     <Style Selector="DataGridCell">
       <Setter Property="Padding" Value="12,8" />
-    </Style>
-    <Style Selector="Button.compact">
-      <Setter Property="MinHeight" Value="28" />
-      <Setter Property="Padding" Value="10,4" />
-      <Setter Property="FontSize" Value="12" />
-    </Style>
-    <Style Selector="ToggleButton.quiet">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="6" />
-    </Style>
-    <Style Selector="ToggleButton.quiet:checked /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#E8EFFB" />
-    </Style>
-    <Style Selector="ToggleButton.quiet:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#E8EFFB" />
     </Style>
   </Window.Styles>
 
@@ -66,8 +51,8 @@
               BorderThickness="1" CornerRadius="10" Padding="12,6">
         <StackPanel Spacing="4">
           <ToggleButton x:Name="FormatToggle" HorizontalAlignment="Left" Classes="quiet"
-                        MinHeight="24" Padding="0,2" ToolTip.Tip="展开或收起完整格式列表">
-            <TextBlock x:Name="FormatSummary" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" />
+                        ToolTip.Tip="展开或收起完整格式列表">
+            <TextBlock x:Name="FormatSummary" FontSize="12" VerticalAlignment="Center" />
           </ToggleButton>
           <ScrollViewer x:Name="FormatScroll" Height="76" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
                         IsVisible="{Binding IsChecked, ElementName=FormatToggle}">
@@ -79,7 +64,7 @@
                        Foreground="{StaticResource BrushTextSecondary}" />
             <TextBox Grid.Column="1" x:Name="OutDirBox" IsReadOnly="True" Classes="output" MinHeight="28" Padding="0,4"
                      ToolTip.Tip="默认与源文件同目录；同名文件会被覆盖" />
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Margin="8,0,0,0">
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" Margin="8,0,0,0">
               <Button Content="更改位置" Classes="compact" Click="OnPickOutDir" />
               <Button Content="恢复默认" Classes="quiet compact" Click="OnClearOutDir" ToolTip.Tip="与源文件同目录" />
             </StackPanel>
@@ -96,7 +81,7 @@
                    Foreground="{StaticResource BrushTextSecondary}" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-        <Button Content="打开输出目录" Classes="quiet" Click="OnOpenOutDir" />
+        <Button Content="打开输出目录" Click="OnOpenOutDir" />
         <Button x:Name="BtnStop" Content="停止" Classes="danger" Click="OnStop" IsEnabled="False" />
         <Button x:Name="BtnStart" Content="开始转换" Classes="primary" Click="OnStart" MinWidth="110" />
       </StackPanel>
@@ -110,7 +95,7 @@
             <TextBlock Text="{Binding Items.Count, ElementName=Root, StringFormat='{}{0} 个文件'}"
                        Foreground="{StaticResource BrushTextSecondary}" FontSize="12" VerticalAlignment="Center" />
           </StackPanel>
-          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
             <Button Content="移除选中" Classes="quiet compact" Click="OnRemove" />
             <Button Content="清空" Classes="quiet compact" Click="OnClear" />
           </StackPanel>
@@ -130,10 +115,10 @@
             </ContextMenu>
           </DataGrid.ContextMenu>
           <DataGrid.Columns>
-            <DataGridTextColumn Header="文件名" Binding="{Binding Name}" Width="2*" />
-            <DataGridTextColumn Header="所在文件夹" Binding="{Binding Folder}" Width="2*" />
-            <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="84" />
-            <DataGridTextColumn Header="说明" Binding="{Binding Note}" Width="3*" />
+            <DataGridTextColumn x:DataType="local:Job" Header="文件名" Binding="{Binding Name}" SortMemberPath="Name" Width="2*" />
+            <DataGridTextColumn x:DataType="local:Job" Header="所在文件夹" Binding="{Binding Folder}" SortMemberPath="Folder" Width="2*" />
+            <DataGridTextColumn x:DataType="local:Job" Header="状态" Binding="{Binding Status}" SortMemberPath="Status" Width="84" />
+            <DataGridTextColumn x:DataType="local:Job" Header="说明" Binding="{Binding Note}" SortMemberPath="Note" Width="3*" />
           </DataGrid.Columns>
         </DataGrid>
         <StackPanel Spacing="10" Margin="0,32,0,0" VerticalAlignment="Center"
