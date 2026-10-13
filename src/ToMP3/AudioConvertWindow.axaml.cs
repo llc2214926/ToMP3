@@ -15,7 +15,7 @@ public class Job(string path) : INotifyPropertyChanged
     public string Name => System.IO.Path.GetFileName(Path);
     public string Folder => System.IO.Path.GetDirectoryName(Path) ?? "";
 
-    /// <summary>转换器的实际产物路径（ncm 里可能是 mp3 也可能是 flac），成功后才填。</summary>
+    /// <summary>验证成功后的最终 MP3 路径，成功后才填。</summary>
     public string? Output { get; set; }
 
     string _status = "等待";

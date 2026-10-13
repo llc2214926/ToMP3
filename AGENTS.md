@@ -12,19 +12,20 @@
 - 不修改系统代理、VPN 或网络代理配置，除非用户明确要求。
 - 删除文件或目录只能移动到废纸篓，同名时加时间戳；禁止使用 `rm`、`unlink` 等直接删除方式。
 
-## 工作文件
+## 目录约定
 
-- 开始工作前检查当天 `yyyy-MM-dd/` 目录，不存在则创建。临时脚本、样例副本、截图和验证产物放在其中。
-- 继续某天的工作时，先把相关内容复制到当天目录，不直接修改历史工作目录。
-- 检查最近一个早于当天的日期目录；若为空，移到废纸篓，不处理非日期目录。
-- 正式源码、项目配置和本指令文件保留在项目约定位置；构建工具的 `bin/`、`obj/` 保留默认位置。
-- SDK 默认递归收集 `.cs` 文件：不要在日期目录随手放可被主项目编译的临时 C# 程序；使用非 `.cs` 后缀保存草稿，或在执行前显式配置编译排除。
+- `src/ToMP3/`：应用源码、项目配置和随包资源；下表中的应用文件路径均相对此目录。
+- `tests/ToMP3.Smoke/`：本地可运行的界面与真实音频转换检查，按项目约定忽略，不提交版本控制；新克隆不包含此目录。
+- `dist/`：发布的 `.app` 和分发压缩包，不提交版本控制。
+- `artifacts/`：临时构建、样例与验证产物，不提交版本控制，不在仓库根目录按日期建文件夹。
+- 各项目的 `bin/`、`obj/` 使用 SDK 默认位置并忽略；不要将临时 C# 程序放进应用源码目录。
 
 ## 项目事实与入口
 
 - 技术栈：C#、.NET 8、Avalonia 11.2.3，命名空间 `ToMP3`，启用可空引用类型。
 - 当前实际运行目标为 macOS Apple Silicon：原生文件选择器依赖 AppKit/Objective-C，内置转换工具为 macOS arm64。不能因 Avalonia 支持跨平台就宣称本项目已支持 Windows/Linux。
-- 当前功能是解密、解包加密音乐文件，不是通用音频转码器。产物可能是 MP3、FLAC、OGG、M4A；不得承诺所有输入都转为 MP3。
+- 产品要求：成功转换后的最终输出必须是实际 MP3 音频，不能仅把扩展名改为 `.mp3`。解密得到 FLAC、OGG、M4A 等格式时，必须继续转码为 MP3；本身已是 MP3 的无需重复编码。
+- 转换流程：在独立临时目录解密，用 ffprobe 识别编码；MP3 音轨直接复制，其他编码通过 FFmpeg 的 libmp3lame（质量参数 `-q:a 2`）转为 MP3。实际解码校验通过后才替换目标文件，失败或取消保留旧目标；临时目录移入废纸篓。
 
 | 文件 | 职责 |
 | --- | --- |
@@ -36,19 +37,20 @@
 | `AboutWindow.axaml` / `AboutWindow.axaml.cs` | 关于窗口，从嵌入的 `Info.plist` 读取版本 |
 | `ToMP3.csproj` / `Info.plist` | 依赖、资源复制、macOS bundle 配置与版本 |
 | `Assets/ncmdump/` / `Assets/um/` | 内置转换器及其来源、版本、许可和调用说明 |
-| `checks/Program.cs` | 原生菜单、关于窗口和窄窗口布局冒烟检查 |
+| `Assets/ffmpeg/` | 内置 ffmpeg/ffprobe、许可、对应源码和可复现构建脚本 |
+| 仓库根目录下 `tests/ToMP3.Smoke/Program.cs` | 原生菜单、关于窗口和窄窗口布局冒烟检查 |
 
 ## 必须保持的行为
 
 - 格式信息集中在 `FormatConvert.All` 与 `UmGroups`；界面支持列表和计数由其派生，不再维护第二份列表。
 - 后缀匹配必须忽略大小写并支持 `.kgm.flac`、`.vpr.flac` 等双点后缀，不能替换成只看 `Path.GetExtension`。
-- `ConvertResult.Output` 必须来自转换器报告且已存在的真实产物，不能通过拼接 `.mp3` 猜测。
-- `.ncm` 使用 `ncmdump`，其他已注册加密格式使用 `um`；不在应用内重写解密算法。
+- `ConvertResult.Output` 必须指向已经验证的最终 MP3 文件，不能指向非 MP3 中间产物，也不能通过拼接 `.mp3` 猜测。只有最终 MP3 生成成功才能标记“完成”；转码失败或取消不得报告成功。
+- `.ncm` 使用 `ncmdump` 解密，其他已注册加密格式使用 `um` 解密；不在应用内重写解密算法。解密后的非 MP3 音频还需经过转码阶段。
 - 子进程使用 `ProcessStartInfo.ArgumentList`，不拼 shell 命令；同时读取 stdout/stderr，去除 ANSI 色码，取消时终止子进程树。
-- `ncmdump` 的退出码不能证明成功，必须解析 `[Done]` 并验证产物存在；`um` 必须解析 `successfully converted` 日志中的 `destination` 并验证产物存在。
+- `ncmdump` 的退出码不能证明解密成功，必须解析 `[Done]` 并验证产物存在；`um` 必须解析 `successfully converted` 日志中的 `destination` 并验证产物存在。这些检查只证明解密阶段成功，不代表最终 MP3 转换完成。
 - 当前 `um` 使用 `--overwrite`，覆盖已有产物时要如实提示；不得把“跳过已有文件”当作新转换成功。用样例副本验证，不覆盖用户原文件。
 - 普通 MP3/FLAC 等不作为已支持的加密输入；需要 ekey 或外部数据库的格式不能保证仅凭扩展名就能解密。
-- 不擅自启用 `um --update-metadata`，它要求额外安装 ffmpeg。调整工具版本或调用参数前先读对应的 `Assets/*/README.md`，保留来源及许可。
+- 不启用 `um --update-metadata`；解密与最终转码分开，FFmpeg 转码时复制已有标签和封面。调整工具版本或调用参数前先读对应的 `Assets/*/README.md`，保留来源及许可。
 - 保持串行转换、重复路径去重、完成项默认不重跑、显式重新转换清空旧状态与产物路径的行为。
 - 文件夹递归导入只收支持的格式并跳过隐藏文件名；单独加入不支持的文件应在清单中显示“跳过”，而不是静默丢弃。
 - 原生选择器在 UI 线程调用；取消选择不改变清单。关于窗口重复打开复用现有实例，关闭后允许重新创建。
@@ -58,31 +60,43 @@
 
 以下命令在仓库根目录执行，需要 .NET 8 SDK；运行界面和原生检查需要 macOS 桌面。
 
+下方测试命令仅在本地保留 `tests/ToMP3.Smoke/` 时可用；新克隆需通过实际运行应用验证，不应把缺少本地测试目录当作构建失败。
+
+发布包内置 FFmpeg 8.0.3、ffprobe 和静态链接的 LAME 3.100，并自包含 .NET 运行时。目标为 macOS 12+ Apple Silicon，用户无需安装 Homebrew、FFmpeg 或 .NET。运行时仅使用 `AppContext.BaseDirectory/Assets/ffmpeg/`，不从 PATH 或开发机路径回退；缺失文件应报告应用不完整。
+
+升级工具时运行 `bash src/ToMP3/Assets/ffmpeg/build.sh artifacts/ffmpeg-build`（仅构建机需要 Xcode 工具），保留 `NOTICE.txt`、许可和完整对应源码；用 `otool -L` 确认只依赖 macOS 系统库，再运行转换检查。不得直接复制 Homebrew 的动态链接二进制。
+
 ```bash
 # 构建
- dotnet build ToMP3.csproj -c Release
+ dotnet build src/ToMP3/ToMP3.csproj -c Release
 
 # 启动开发界面
- dotnet run --project ToMP3.csproj
+ dotnet run --project src/ToMP3/ToMP3.csproj
 
 # 原生菜单、关于窗口和窄窗口布局；需要未锁定的 macOS 桌面
- dotnet run --project checks/AboutSmoke.csproj
+ dotnet run --project tests/ToMP3.Smoke/AboutSmoke.csproj
 
 # 仅检查窄窗口布局，仍需要图形环境
- dotnet run --project checks/AboutSmoke.csproj -- --layout-only
+ dotnet run --project tests/ToMP3.Smoke/AboutSmoke.csproj -- --layout-only
+
+# 无需图形界面的真实音频转换回归
+ dotnet run --project tests/ToMP3.Smoke/AboutSmoke.csproj -- --conversion-only artifacts/mp3-smoke
 
 # 发布 macOS arm64 自包含应用；会更新现有 bundle，先确认这是本次任务范围
- dotnet publish ToMP3.csproj -c Release -r osx-arm64 --self-contained true -o ToMP3.app/Contents/MacOS/
+ dotnet publish src/ToMP3/ToMP3.csproj -c Release -r osx-arm64 --self-contained true -o dist/ToMP3.app/Contents/MacOS/
+ codesign --force --deep --sign - dist/ToMP3.app
+ ditto -c -k --sequesterRsrc --keepParent dist/ToMP3.app dist/ToMP3-macOS-arm64.zip
 ```
 
-- 主项目已排除 `checks/**` 的 C# 编译项；验证程序通过项目引用使用真实应用。
+- 应用与检查项目位于独立目录，验证程序通过项目引用使用真实应用，无需主项目排除测试源码。
 - 发布时保持 `Assets/<工具名>/<工具名>` 相对可执行目录的位置。发布目标包含 `ToMP3.app` 时，项目会复制 `Info.plist` 和 `icon.icns` 到 bundle 对应位置。
-- 不直接修改 `bin/`、`obj/` 或 `ToMP3.app/` 内生成的源码副本来修复问题；修改源文件后重新构建或发布。
+- 不直接修改 `bin/`、`obj/` 或 `dist/` 内生成的文件来修复问题；修改源文件后重新构建或发布。
 
 ## 验证与交付
 
 - 代码变更至少构建一次，并实际运行改动路径；编译成功不等于功能正确。纯文档变更核对引用与命令，不必无关地重打发布包。
-- 界面改动检查真实窗口：最小尺寸、格式说明展开、按钮可见性，以及受影响的原生交互。现有冒烟只覆盖菜单、关于窗口和部分布局，不代表转换流程已验证。
+- 界面改动检查真实窗口：最小尺寸、格式说明展开、按钮可见性，以及受影响的原生交互。菜单与布局冒烟不代表转换已验证；转换路径另运行 `--conversion-only`，使用现场生成的正弦音 NCM、KWM 容器校验两种工具的真实解密与 MP3 编码，并检查 MP3 无重复编码及目标文件保护。
+- 无环境依赖发布：转换检查必须使用内置工具并排除 Homebrew PATH；发布后检查包内工具动态依赖，并把 app 复制到新路径验证，不能只在开发目录成功就宣称独立运行。
 - 转换改动使用有权处理的真实样例副本和独立输出目录，检查成功产物、失败原因、取消及覆盖提示；没有样例时明确说明验证缺口，不宣称转换通过。
 - 缺陷先复现再修复；为有风险的分支保留最小可运行回归检查，不为字段转发、源码文字或偶然实现细节堆测试。
 - 工具升级需验证二进制能实际启动，并跑真实转换；仅检查版本号不够。排查隔离属性前核实来源，不盲目移除安全属性。

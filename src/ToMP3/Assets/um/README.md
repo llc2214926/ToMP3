@@ -1,7 +1,7 @@
 # um（vendor 进来的可执行文件）
 
 [Unlock Music](https://git.unlock-music.dev/um/cli) 的 CLI 版。**直接放二进制，不改、不重写解密逻辑**：
-界面把它当子进程调，本应用根目录的 `FormatConvert.cs` 里的 `Um` 就是它。
+界面把它当子进程调，`src/ToMP3/FormatConvert.cs` 里的 `Um` 就是它。
 覆盖国内各家私有加密格式（除 ncm 外的全部，见下）——ncm 仍走隔壁的 `ncmdump`（它会把封面/标签写进产物）。
 
 - 来源：https://git.unlock-music.dev/um/cli （tag `v0.2.12`，module 路径 `unlock-music.dev/cli`）
@@ -31,7 +31,7 @@ um 会如实报「no any decoder can resolve the file」）。酷狗的 `kgg`（
 ## 这个二进制是怎么来的
 
 在 macOS arm64 + Go 上，从**官方 module 源**（`proxy.golang.org`，即 `git.unlock-music.dev/um/cli`
-的 tag 镜像）编译，不用第三方转载的成品。仓库根跑：
+的 tag 镜像）编译，不用第三方转载的成品。在仓库的 `artifacts/um-build/` 目录运行：
 
 ```bash
 curl -sSL -o um.zip "https://proxy.golang.org/unlock-music.dev/cli/@v/v0.2.12.zip"
@@ -50,7 +50,7 @@ CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 \
 放进本目录前要清掉，否则开发时跑不了、装到 /Applications 后也一样跑不起来：
 
 ```bash
-xattr -c Assets/um/um
+xattr -c src/ToMP3/Assets/um/um  # 在仓库根目录执行
 ```
 
 （`cp` 会连 xattr 一起抄，所以从别处拷过来之后都要清；已经装好的 .app 里那份同理。）

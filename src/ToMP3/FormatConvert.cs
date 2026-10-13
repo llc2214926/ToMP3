@@ -4,8 +4,7 @@ using System.Text.Json;
 namespace ToMP3;
 
 /// <summary>单个文件的转换结果。Ok=false 时 <see cref="Detail"/> 是原因；Ok=true 时
-/// <see cref="Output"/> 是**实际产物路径**——不是猜的，转换器自己报，界面拿它去访达里定位
-/// （加密文件里可能是 mp3 也可能是 flac，猜扩展名会指错文件）。</summary>
+/// <see cref="Output"/> 是已验证的最终 MP3 路径，界面用它在访达里定位。</summary>
 public sealed record ConvertResult(bool Ok, string Detail, string? Output = null)
 {
     public static ConvertResult Fail(string why) => new(false, why);
@@ -54,8 +53,9 @@ public static class FormatConvert
 
     public static readonly Converter[] All =
     [
-        new Converter("网易云音乐", [".ncm"], NcmToMp3),
-        .. UmGroups.Select(g => new Converter(g.Platform, g.Exts, UmToAudio)),
+        new Converter("网易云音乐", [".ncm"], (src, dir, ct) => ToMp3(src, dir, ct, NcmToMp3)),
+        .. UmGroups.Select(g => new Converter(g.Platform, g.Exts,
+            (src, dir, ct) => ToMp3(src, dir, ct, UmToAudio))),
     ];
 
     /// <summary>按扩展名找认领的转换器；不认识返回 null（界面标「跳过」）。
@@ -72,6 +72,79 @@ public static class FormatConvert
         $"支持 {Count} 种加密格式：" + string.Join(" ｜ ",
             All.Select(c => $"{c.Name} {string.Join(' ', c.Inputs.Select(x => x.TrimStart('.')))}"));
 
+    // 所有解密器共用：隔离中间文件，只有最终 MP3 验证成功才替换目标。
+    static async Task<ConvertResult> ToMp3(string src, string outDir, CancellationToken ct,
+        Func<string, string, CancellationToken, Task<ConvertResult>> decrypt)
+    {
+        if (ct.IsCancellationRequested) return ConvertResult.Fail("已取消");
+        var ffmpeg = Path.Combine(AppContext.BaseDirectory, "Assets", "ffmpeg", "ffmpeg");
+        var ffprobe = Path.Combine(AppContext.BaseDirectory, "Assets", "ffmpeg", "ffprobe");
+        if (!File.Exists(ffmpeg) || !File.Exists(ffprobe))
+            return ConvertResult.Fail("应用内置 FFmpeg 文件缺失，请重新安装完整的 ToMP3.app");
+        EnsureExecutable(ffmpeg);
+        EnsureExecutable(ffprobe);
+
+        Directory.CreateDirectory(outDir);
+        var work = Directory.CreateDirectory(Path.Combine(Path.GetFullPath(outDir), ".tomp3-" + Guid.NewGuid().ToString("N"))).FullName;
+        try
+        {
+            var decoded = await decrypt(src, work, ct);
+            if (!decoded.Ok) return decoded;
+            var audio = decoded.Output!;
+            var probe = await Run(Command(ffprobe, "-v", "error", "-select_streams", "a:0",
+                "-show_entries", "stream=codec_name", "-of", "default=noprint_wrappers=1:nokey=1", audio), ct);
+            if (probe.Canceled) return ConvertResult.Fail("已取消");
+            if (probe.ExitCode != 0 || probe.Text.Length == 0)
+                return ConvertResult.Fail("无法识别解密后的音频：" + probe.Text);
+
+            var output = Path.Combine(Path.GetFullPath(outDir), Path.GetFileNameWithoutExtension(audio) + ".mp3");
+            // 避免解密后的文件恰好叫 final.mp3 时输入输出相同。
+            var encodedDir = Directory.CreateDirectory(Path.Combine(work, "encoded")).FullName;
+            var staged = Path.Combine(encodedDir, "final.mp3");
+            var args = new List<string> { "-nostdin", "-v", "error", "-y", "-i", audio,
+                "-map", "0:a:0", "-map", "0:v?", "-map_metadata", "0", "-c:v", "copy", "-c:a" };
+            args.Add(probe.Text == "mp3" ? "copy" : "libmp3lame");
+            if (probe.Text != "mp3") args.AddRange(["-q:a", "2"]);
+            args.AddRange(["-id3v2_version", "3", "-f", "mp3", staged]);
+            var encoded = await Run(Command(ffmpeg, args.ToArray()), ct);
+            if (encoded.Canceled) return ConvertResult.Fail("已取消");
+            if (encoded.ExitCode != 0 || !File.Exists(staged) || new FileInfo(staged).Length == 0)
+                return ConvertResult.Fail("MP3 转码失败：" + encoded.Text);
+            // 真正解码检查，不能把扩展名正确但损坏或截断的文件报告为成功。
+            var verified = await Run(Command(ffmpeg, "-nostdin", "-v", "error", "-xerror",
+                "-i", staged, "-map", "0:a:0", "-f", "null", "-"), ct);
+            if (verified.Canceled || ct.IsCancellationRequested) return ConvertResult.Fail("已取消");
+            if (verified.ExitCode != 0) return ConvertResult.Fail("MP3 校验失败：" + verified.Text);
+            var existed = File.Exists(output);
+            File.Move(staged, output, true);
+            return new ConvertResult(true, string.Join(" · ", new[] { decoded.Detail,
+                existed ? "覆盖了已存在的同名文件" : "" }.Where(s => s.Length > 0)), output);
+        }
+        finally
+        {
+            // 中间产物只移入废纸篓，不直接删除；不会触碰源文件。
+            var trash = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".Trash");
+            try
+            {
+                Directory.CreateDirectory(trash);
+                Directory.Move(work, Path.Combine(trash, "ToMP3-" + Guid.NewGuid().ToString("N")));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Trace.TraceWarning($"中间文件保留在 {work}：{ex.Message}");
+            }
+        }
+    }
+
+
+    static ProcessStartInfo Command(string tool, params string[] args)
+    {
+        var psi = new ProcessStartInfo(tool)
+        { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+        foreach (var arg in args) psi.ArgumentList.Add(arg);
+        return psi;
+    }
+
     // ── ncmdump：.ncm ────────────────────────────────────────────────────────────
 
     /// <summary>ncmdump 的调用是 `ncmdump 文件 -o 输出目录`。**它任何情况都退 0**
@@ -83,9 +156,6 @@ public static class FormatConvert
         if (!File.Exists(Ncmdump)) return ConvertResult.Fail("找不到内置 ncmdump（Assets/ncmdump/ncmdump）");
         EnsureExecutable(Ncmdump);
 
-        // ncmdump 覆盖同名产物前不问一声，先记下已存在的，完事如实告诉用户
-        var stem = Path.Combine(outDir, Path.GetFileNameWithoutExtension(src));
-        var existed = new[] { stem + ".mp3", stem + ".flac" }.Where(File.Exists).ToHashSet();
 
         var psi = new ProcessStartInfo(Ncmdump)
         { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
@@ -93,7 +163,7 @@ public static class FormatConvert
         psi.ArgumentList.Add("-o");
         psi.ArgumentList.Add(outDir);
 
-        var (outText, canceled) = await Run(psi, ct);
+        var (outText, canceled, _) = await Run(psi, ct);
         if (canceled) return ConvertResult.Fail("已取消");
 
         string? produced = null;
@@ -109,7 +179,6 @@ public static class FormatConvert
                                    ?? (outText.Length > 0 ? outText : "ncmdump 没有输出"));
 
         var notes = new List<string>();
-        if (existed.Contains(produced)) notes.Add("覆盖了已存在的同名文件");
         int warns = outText.Split('\n').Count(l => l.StartsWith("[Warn]", StringComparison.Ordinal));
         if (warns > 0) notes.Add($"ncmdump 打了 {warns} 条警告（不影响产物）");
         return new ConvertResult(true, string.Join(" · ", notes), produced);
@@ -126,11 +195,6 @@ public static class FormatConvert
         if (!File.Exists(Um)) return ConvertResult.Fail("找不到内置 um（Assets/um/um）");
         EnsureExecutable(Um);
 
-        // um 默认「产物已存在就跳过」（退出码还是 0，跟成功混一起），统一传 --overwrite 覆盖；
-        // 覆盖与否自己记：先记下输出目录里已有的文件，完事看产物是不是原来就在。
-        var existed = Directory.Exists(outDir)
-            ? Directory.GetFiles(outDir).ToHashSet(StringComparer.Ordinal)
-            : [];
 
         var psi = new ProcessStartInfo(Um)
         { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
@@ -139,7 +203,7 @@ public static class FormatConvert
         psi.ArgumentList.Add(outDir);
         psi.ArgumentList.Add(src);
 
-        var (outText, canceled) = await Run(psi, ct);
+        var (outText, canceled, _) = await Run(psi, ct);
         if (canceled) return ConvertResult.Fail("已取消");
 
         string? produced = null, why = null;
@@ -154,26 +218,24 @@ public static class FormatConvert
         if (produced is null || !File.Exists(produced))
             return ConvertResult.Fail(why ?? (outText.Length > 0 ? outText : "um 没有输出"));
 
-        return new ConvertResult(true,
-            existed.Contains(produced) ? "覆盖了已存在的同名文件" : "", produced);
+        return new ConvertResult(true, "", produced);
     }
 
     // ── 两家的共用部分 ───────────────────────────────────────────────────────────
 
-    /// <summary>跑一个子进程、合并 stdout/stderr 并剥掉 ANSI 色码，返回 (日志, 是否被取消)。
-    /// 两个流都得读，不然管道写满后子进程卡死、WaitForExit 永远不回。</summary>
-    static async Task<(string Text, bool Canceled)> Run(ProcessStartInfo psi, CancellationToken ct)
+    /// <summary>并发读取两个日志流；取消后等待子进程退出，避免清理时仍在写文件。</summary>
+    static async Task<(string Text, bool Canceled, int ExitCode)> Run(ProcessStartInfo psi, CancellationToken ct)
     {
+        if (ct.IsCancellationRequested) return ("", true, -1);
         using var p = Process.Start(psi)!;
         using var reg = ct.Register(() => { try { p.Kill(true); } catch { } });
         var stdout = p.StandardOutput.ReadToEndAsync();
         var stderr = p.StandardError.ReadToEndAsync();
-        try { await p.WaitForExitAsync(ct); }
-        catch (OperationCanceledException) { return ("", true); }
+        await p.WaitForExitAsync();
 
         var text = Ansi.Replace(string.Join('\n', new[] { (await stderr).Trim(), (await stdout).Trim() }
             .Where(s => s.Length > 0)), "");
-        return (text, false);
+        return (text, ct.IsCancellationRequested, p.ExitCode);
     }
 
     /// <summary>取 zap 日志行末尾 JSON 字段（`successfully converted` 的 destination、FATAL 的 error）。</summary>

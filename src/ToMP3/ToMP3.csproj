@@ -20,18 +20,17 @@
 
   <!-- 窗口/任务栏图标（Win/Linux 用；PNG 直接嵌进程序集） -->
   <ItemGroup>
-    <Compile Remove="checks/**" />
     <AvaloniaResource Include="Assets/icon.png" />
     <!-- 关于窗口与发布包读取同一份版本信息，避免手动维护两份版本号。 -->
     <EmbeddedResource Include="Info.plist" LogicalName="ToMP3.Info.plist" />
   </ItemGroup>
 
-  <!-- 格式转 mp3：vendor 的两个单文件 arm64 可执行（都 MIT）——
-       ncmdump 管 .ncm（会把封面/标签写进产物），um 管其余各家私有加密格式。
-       运行时按 AppContext.BaseDirectory/Assets/<名字>/<名字> 找，publish 进 bundle 后相对路径不变。 -->
+  <!-- 解密工具 ncmdump、um（MIT）与 FFmpeg 音频工具（LGPL）随包复制，
+       包含对应许可和源码；运行时只按 AppContext.BaseDirectory/Assets 找工具。 -->
   <ItemGroup>
     <Content Include="Assets/ncmdump/**" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets/um/**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets/ffmpeg/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- publish 到 ToMP3.app/Contents/MacOS 后回填 bundle 里 Contents/ 下的两样东西：

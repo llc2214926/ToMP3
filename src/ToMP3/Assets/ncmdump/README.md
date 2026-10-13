@@ -1,13 +1,16 @@
 # ncmdump（vendor 进来的可执行文件）
 
 网易云音乐 `.ncm` → mp3 / flac 的解密工具。**直接放二进制，不改、不重写解密逻辑**：
-界面把它当子进程调，本应用根目录的 `FormatConvert.cs` 里那一行
+界面把它当子进程调，`src/ToMP3/FormatConvert.cs` 里那一行
 `Ncmdump` 就是它。
 
 - 来源：https://github.com/taurusxin/ncmdump （C++ 版；源码复刻自已删库的 anonymous5l/ncmdump）
 - 版本：`ncmdump -v` → `ncmdump version 1.5.1`
-- 平台：macOS arm64 单文件（Mach-O thin arm64，316 KB）
+- 平台：macOS arm64；可执行文件旁必须保留 `libtag.2.dylib`（TagLib 2.3），通过 `@loader_path` 加载，不再依赖 Homebrew。
 - 许可：MIT（全文见文末）
+- TagLib 来源：https://taglib.org/；对应完整源码 `source/taglib-2.3.tar.gz` 随包提供，SHA-256 为 `7349f6fd942418bc7009ebe743eb7c9d055f02921ec56fa436ec25007c47fd38`。
+- TagLib 按 LGPL-2.1 分发，附 `TagLib-LICENSE-LGPL.txt`、`TagLib-LICENSE-MPL.txt` 和 `TagLib-AUTHORS.txt`。库来自 Homebrew 2.3 构建，仅修改 Mach-O install name 并重新做 ad-hoc 签名，允许替换为 ABI 兼容的修改版。
+- 更新后用 `otool -L` 检查 ncmdump 与 libtag，不允许出现 `/opt/homebrew` 或其他开发机绝对路径；修改加载路径后对两者执行 `codesign --force --sign -`。
 
 ## 换版本时注意
 
@@ -15,7 +18,7 @@
 放进本目录前要清掉，否则开发时跑不了、装到 /Applications 后也一样跑不起来：
 
 ```bash
-xattr -c Assets/ncmdump/ncmdump
+xattr -c src/ToMP3/Assets/ncmdump/ncmdump  # 在仓库根目录执行
 ```
 
 （`cp` 会连 xattr 一起抄，所以从别处拷过来之后都要清；已经装好的 .app 里那份同理。）

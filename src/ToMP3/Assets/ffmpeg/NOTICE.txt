@@ -1,0 +1,26 @@
+FFmpeg 8.0.3 与 LAME 3.100
+
+本目录的 ffmpeg、ffprobe 为 macOS arm64 独立命令行工具，仅由 ToMP3 通过子进程调用。
+FFmpeg 和 libmp3lame 静态链接，动态依赖仅来自 macOS 系统库；运行不需要 Homebrew、额外 FFmpeg 或网络。
+本构建的 macOS 部署目标为 12.0。未启用 GPL 或 nonfree 组件。
+
+许可：
+- FFmpeg：Copyright (c) 2000-2026 the FFmpeg developers，LGPL-2.1-or-later，全文见 FFmpeg-LICENSE.txt。
+- LAME：Copyright (c) the LAME developers，LGPL-2.0-or-later，全文见 LAME-LICENSE.txt；各源文件版权声明保留在源码包中。
+- 软件不提供任何担保，具体权利和条件以随附许可全文为准。
+
+完整对应源码随应用一同提供：
+- source/ffmpeg-8.0.3.tar.xz
+  https://ffmpeg.org/releases/ffmpeg-8.0.3.tar.xz
+  SHA-256: 6136812ea6d4e68bdba27e33c2a94382711cdf4f8602ffef056ff792bd6f9818
+  同目录附官方公钥及签名；已验证签名指纹 FCF986EA15E6E293A5644F10B4322F04D67658D8。
+- source/lame-3.100.tar.gz
+  https://downloads.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz
+  SHA-256: ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e
+  校验值与 Homebrew LAME 3.100 配方一致。
+
+两份源码均未修改，构建参数完整保留在 build.sh。
+重建：在装有 Xcode 命令行工具的 Apple Silicon Mac 上运行：
+  bash build.sh /绝对路径/artifacts/ffmpeg-build
+脚本将从随附源码重建并替换当前目录的两个工具。可修改源码及相应校验值，重建使用修改版本。
+运行 ToMP3 不需要这些构建工具；构建脚本和源码仅用于许可履行及复现。
