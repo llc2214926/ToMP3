@@ -15,16 +15,16 @@
                Foreground="{StaticResource BrushTextSecondary}" />
     <TextBlock Text="音乐格式转换工具" FontSize="15" HorizontalAlignment="Center"
                Foreground="{StaticResource BrushTextPrimary}" />
-    <TextBlock Text="批量解包加密音乐，保留原始音质。支持拖入文件、文件夹及自选输出位置。"
+    <TextBlock Text="批量解密音乐并统一输出 MP3。支持拖入文件、文件夹及自选输出位置。"
                TextWrapping="Wrap" TextAlignment="Center" LineHeight="22"
                Foreground="{StaticResource BrushTextSecondary}" />
     <Border Background="{StaticResource BrushCard}" CornerRadius="10" Padding="14" Margin="0,4">
       <StackPanel Spacing="8">
         <TextBlock x:Name="PlatformText" HorizontalAlignment="Center"
                    Foreground="{StaticResource BrushTextSecondary}" />
-        <TextBlock Text="转换内核：ncmdump 1.5.1 · Unlock Music 0.2.12"
-                   FontSize="11" HorizontalAlignment="Center" Foreground="{StaticResource BrushTextSecondary}" />
-        <TextBlock Text="输出为源音频格式（可能是 MP3、FLAC、OGG 等），不强制转码为 MP3。"
+        <TextBlock Text="内置工具：ncmdump 1.5.1 · Unlock Music 0.2.12 · FFmpeg 8.0.3"
+                   TextWrapping="Wrap" TextAlignment="Center" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" />
+        <TextBlock Text="最终输出均为 MP3：已有 MP3 音轨不重复编码，其他格式转为有损 MP3。无需额外安装转换工具。"
                    TextWrapping="Wrap" TextAlignment="Center" FontSize="11"
                    Foreground="{StaticResource BrushTextSecondary}" />
       </StackPanel>
