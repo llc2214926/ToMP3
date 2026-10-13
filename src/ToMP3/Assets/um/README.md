@@ -25,12 +25,19 @@
 | 咪咕音乐 | mmp4 |
 
 **新版 QQ 音乐的 `mflach` / 部分 `mflac`、`mgg`（文件尾 16 字节是 `musicex`）需要 ekey**，
-密钥不在文件里，要从 QQ 音乐客户端的 MMKV 密钥库取，用 `--qmc-mmkv` / `--qmc-mmkv-key` 传。
-界面没暴露这两个：macOS 13 版客户端（`com.tencent.QQMusicMac` 容器）的
-`Application Support/QQMusicMac/iData/MMKVStreamEncryptId` 实测通篇是 0，`qqmusic.sqlite` 里也没有
-ekey 列；把这个空库传给 `um v0.2.12` 会直接 panic（`mmkv/vault.go:90` 越界），比报错更糟。
-所以这类文件在本应用里转不了，界面按 `read key from mmkv failed` 给中文原因，
-不照抄 um 的「no any decoder can resolve the file」。酷狗的 `kgg`（v11 PC 端）同理要 `--kgg-db`。
+密钥不在文件里。um v0.2.12 的两条取密钥路都用不上：
+
+- `--qmc-mmkv` / `--qmc-mmkv-key` 要客户端的 MMKV 密钥库。macOS 客户端
+  （`com.tencent.QQMusicMac` 容器）的 `Application Support/QQMusicMac/iData/MMKVStreamEncryptId`
+  实测通篇是 0，`qqmusic.sqlite` 里也没有 ekey 列；把这个空库传进去还会直接 panic
+  （`mmkv/vault.go:90` 越界），比报错更糟，所以界面不暴露这两个参数。
+- 它自己的 `musicex` 分支是坏的：`algo/qmc/qmc_footer_musicex.go` 把魔术字读成 `buffer[0x04:0x0C]`
+  （应为 `[0x08:0x10]`），任何 musicex 文件都会报 `MusicEx magic mismatch`，升级或换版本时先确认这点是否已修。
+
+所以这类文件由应用自己取密钥：`src/ToMP3/QqEkey.cs` 读文件尾的歌曲 mid 和资源文件名，
+用客户端登录态向官方接口换 ekey，再把 ekey 按**旧版「裸密钥」尾部**（密钥原文 + 4 字节小端长度）
+写进临时副本——就是 `algo/qmc/qmc.go` 里 `readRawKey` 那条分支，**解密算法仍然全部由 um 执行**。
+酷狗的 `kgg`（v11 PC 端）另需 `--kgg-db`，目前同样没有可用来源，界面如实报原因。
 
 ## 这个二进制是怎么来的
 

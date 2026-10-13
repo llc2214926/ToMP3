@@ -194,16 +194,39 @@ public static class FormatConvert
 
     // ── um：其余各家私有加密格式 ──────────────────────────────────────────────────
 
-    /// <summary>um 的调用是 `um --overwrite -o 输出目录 文件`。退出码可信（0 成功 / 1 失败），
-    /// 成功与否仍以 `successfully converted` 那行日志为准——顺便从它的 `destination` 拿真实产物路径
-    /// （um 按内容嗅探 mp3/flac/ogg/m4a，不是照抄输入后缀）。日志走 stderr、格式是 zap 的
-    /// `时间 \t 级别 \t 消息 \t JSON`，级别带 ANSI 色码，解析前先剥。</summary>
+    /// <summary>先原样让 um 解一遍（老格式的 ekey 就在文件里）。失败且文件是新版 QQ 音乐的
+    /// `musicex` 格式时，走 <see cref="QqEkey"/>：联网换 ekey、写成带旧版密钥尾的临时副本，再让 um 解。
+    /// um v0.2.12 自己的 musicex 分支是坏的（`qmc_footer_musicex.go` 把魔术字读成 `buffer[4:12]`，
+    /// 永远报 magic mismatch），而且它只会去客户端 MMKV 找密钥——macOS 客户端那个库是空的。</summary>
     static async Task<ConvertResult> UmToAudio(string src, string outDir, CancellationToken ct)
     {
         if (!File.Exists(Um)) return ConvertResult.Fail("找不到内置 um（Assets/um/um）");
         EnsureExecutable(Um);
 
+        var first = await RunUm(src, outDir, ct);
+        if (first.Ok || ct.IsCancellationRequested) return first;
+        if (!QqEkey.IsMusicEx(src))
+            return first.Detail.Contains("no any decoder can resolve the file", StringComparison.Ordinal)
+                ? ConvertResult.Fail("um 认不出这个文件：可能不是加密音频，或者密钥在客户端数据库里（如酷狗 kgg）")
+                : first;
 
+        try
+        {
+            var second = await RunUm(await QqEkey.RawKeyCopy(src, outDir, ct), outDir, ct);
+            return second.Ok ? second : ConvertResult.Fail("取到 QQ 音乐密钥后仍解密失败：" + second.Detail);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or JsonException)
+        {
+            return ConvertResult.Fail(ex.Message);
+        }
+    }
+
+    /// <summary>um 的调用是 `um --overwrite -o 输出目录 文件`。退出码可信（0 成功 / 1 失败），
+    /// 成功与否仍以 `successfully converted` 那行日志为准——顺便从它的 `destination` 拿真实产物路径
+    /// （um 按内容嗅探 mp3/flac/ogg/m4a，不是照抄输入后缀）。日志走 stderr、格式是 zap 的
+    /// `时间 \t 级别 \t 消息 \t JSON`，级别带 ANSI 色码，解析前先剥。</summary>
+    static async Task<ConvertResult> RunUm(string src, string outDir, CancellationToken ct)
+    {
         var psi = new ProcessStartInfo(Um)
         { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
         psi.ArgumentList.Add("--overwrite");
@@ -224,11 +247,7 @@ public static class FormatConvert
             else if (t[2] == "run app failed") why = Json(line, "error");
         }
         if (produced is null || !File.Exists(produced))
-            // 新版 QQ 音乐的 mflac/mgg（文件尾 `musicex`）把 ekey 存在客户端里，文件内没有密钥；
-            // um 找不到密钥库时只会报 "no any decoder can resolve the file"，照抄对用户没用。
-            return ConvertResult.Fail(outText.Contains("read key from mmkv failed", StringComparison.Ordinal)
-                ? "密钥（ekey）不在文件里，要从音乐客户端的密钥库取；本机没有可用密钥库，无法解密"
-                : why ?? (outText.Length > 0 ? outText : "um 没有输出"));
+            return ConvertResult.Fail(why ?? (outText.Length > 0 ? outText : "um 没有输出"));
 
         return new ConvertResult(true, "", produced);
     }
