@@ -33,7 +33,8 @@ public static class FormatConvert
         new("\u001b\\[[0-9;]*m", System.Text.RegularExpressions.RegexOptions.Compiled);
 
     /// <summary>um 认领的加密扩展名，按平台分组（`um --supported-ext` 里挑出来的，纯
-    /// mp3/flac/wav/ogg/m4a/aac/wma 属于它的 noop 解码器、默认关掉，不列——那些文件转不出新东西）。
+    /// mp3/flac/wav/ogg/m4a/aac/wma 是它的 noop 解码器、默认关掉，不走 um——那些归
+    /// <see cref="PlainAudio"/>，直接交给 FFmpeg 转码）。
     /// **有双点后缀**（`kgm.flac`、`vpr.flac`），所以匹配走「文件名后缀」而不是 Path.GetExtension。
     /// 分组同时喂了界面那行「支持 …」，加扩展名改这里就够了。</summary>
     static readonly (string Platform, string[] Exts)[] UmGroups =
@@ -51,11 +52,20 @@ public static class FormatConvert
         ("咪咕音乐", [".mmp4"]),
     ];
 
+    /// <summary>不加密、ffmpeg 直接能读的常见音频：只转码，不解密。`.mp3` 故意不收——
+    /// 已经是 MP3 不该重复编码，输出目录等于源目录时还会覆盖用户原文件。</summary>
+    static readonly string[] PlainAudio =
+        [".flac", ".ogg", ".oga", ".opus", ".m4a", ".aac", ".wav", ".aiff", ".aif", ".wma", ".ape"];
+
+    /// <summary>登记顺序就是匹配优先级：加密格式必须排在 <see cref="PlainAudio"/> 前面——
+    /// `.kgm.flac`、`.vpr.flac` 也以 `.flac` 结尾，<see cref="Match"/> 取第一个命中的转换器。</summary>
     public static readonly Converter[] All =
     [
         new Converter("网易云音乐", [".ncm"], (src, dir, ct) => ToMp3(src, dir, ct, NcmToMp3)),
         .. UmGroups.Select(g => new Converter(g.Platform, g.Exts,
             (src, dir, ct) => ToMp3(src, dir, ct, UmToAudio))),
+        new Converter("普通音频", PlainAudio, (src, dir, ct) =>
+            ToMp3(src, dir, ct, (s, _, _) => Task.FromResult(new ConvertResult(true, "", s)))),
     ];
 
     /// <summary>按扩展名找认领的转换器；不认识返回 null（界面标「跳过」）。
@@ -63,13 +73,13 @@ public static class FormatConvert
     public static Converter? Match(string path) =>
         All.FirstOrDefault(c => c.Inputs.Any(x => path.EndsWith(x, StringComparison.OrdinalIgnoreCase)));
 
-    /// <summary>认领的加密扩展名总数（界面上写「支持 N 种」）。</summary>
+    /// <summary>认领的扩展名总数（界面上写「支持 N 种」）。</summary>
     public static int Count => All.Sum(c => c.Inputs.Length);
 
-    /// <summary>界面上那行「支持什么格式」：按平台分组、摊开全部扩展名（含 ncm）。数据驱动——
+    /// <summary>界面上那行「支持什么格式」：按平台分组、摊开全部扩展名（含 ncm 和普通音频）。数据驱动——
     /// 加平台/扩展名只改 <see cref="All"/> 与 <see cref="UmGroups"/>，界面自动跟着变。</summary>
     public static string SupportList =>
-        $"支持 {Count} 种加密格式：" + string.Join(" ｜ ",
+        $"支持 {Count} 种格式：" + string.Join(" ｜ ",
             All.Select(c => $"{c.Name} {string.Join(' ', c.Inputs.Select(x => x.TrimStart('.')))}"));
 
     // 所有解密器共用：隔离中间文件，只有最终 MP3 验证成功才替换目标。
@@ -216,7 +226,11 @@ public static class FormatConvert
             else if (t[2] == "run app failed") why = Json(line, "error");
         }
         if (produced is null || !File.Exists(produced))
-            return ConvertResult.Fail(why ?? (outText.Length > 0 ? outText : "um 没有输出"));
+            // 新版 QQ 音乐的 mflac/mgg（文件尾 `musicex`）把 ekey 存在客户端里，文件内没有密钥；
+            // um 找不到密钥库时只会报 "no any decoder can resolve the file"，照抄对用户没用。
+            return ConvertResult.Fail(outText.Contains("read key from mmkv failed", StringComparison.Ordinal)
+                ? "密钥（ekey）不在文件里，要从音乐客户端的密钥库取；本机没有可用密钥库，无法解密"
+                : why ?? (outText.Length > 0 ? outText : "um 没有输出"));
 
         return new ConvertResult(true, "", produced);
     }

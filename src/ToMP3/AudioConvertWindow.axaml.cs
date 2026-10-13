@@ -56,7 +56,7 @@ public partial class AudioConvertWindow : Window
         InitializeComponent();
         Grid.ItemsSource = Items;
         FormatHint.Text = FormatConvert.SupportList;
-        FormatSummary.Text = $"支持 {FormatConvert.Count} 种加密音乐格式 · 查看完整列表";
+        FormatSummary.Text = $"支持 {FormatConvert.Count} 种音乐格式 · 查看完整列表";
         ShowOutDir();
         Report();
 
@@ -110,7 +110,7 @@ public partial class AudioConvertWindow : Window
             if (_seen.Add(f)) { Items.Add(new Job(f)); added++; }
 
         Report();
-        if (expand && added == 0) Say("这个文件夹里没有支持的加密音乐文件");
+        if (expand && added == 0) Say("这个文件夹里没有支持的音乐文件");
     }
 
     void OnRemove(object? sender, RoutedEventArgs e)

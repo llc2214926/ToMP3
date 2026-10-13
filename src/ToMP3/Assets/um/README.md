@@ -11,8 +11,8 @@
 
 ## 支持的格式
 
-`um --supported-ext` 列全部。界面认领的是其中的**加密**格式（纯 mp3/flac/wav/ogg/m4a/aac/wma
-是 um 的 noop 解码器，默认关掉，不认领——那些文件转不出新东西）：
+`um --supported-ext` 列全部。界面交给 um 的只是其中的**加密**格式（纯 mp3/flac/wav/ogg/m4a/aac/wma
+是 um 的 noop 解码器、默认关掉，过一遍也转不出新东西；这些普通音频由界面直接送 FFmpeg 转码）：
 
 | 平台 | 扩展名 |
 |---|---|
@@ -24,9 +24,13 @@
 | 百度音乐 | bkcmp3 bkcflac bkcogg bkcwav bkcwma bkcm4a bkcape |
 | 咪咕音乐 | mmp4 |
 
-**新版 QQ 音乐的 `mflach` / 部分 `mflac`（QM 加密）需要 ekey**，要从 QQ 音乐客户端的 MMKV
-数据库里取，用 `--qmc-mmkv` / `--qmc-mmkv-key` 传。界面没暴露这两个（库里没有就别转了，
-um 会如实报「no any decoder can resolve the file」）。酷狗的 `kgg`（v11 PC 端）同理要 `--kgg-db`。
+**新版 QQ 音乐的 `mflach` / 部分 `mflac`、`mgg`（文件尾 16 字节是 `musicex`）需要 ekey**，
+密钥不在文件里，要从 QQ 音乐客户端的 MMKV 密钥库取，用 `--qmc-mmkv` / `--qmc-mmkv-key` 传。
+界面没暴露这两个：macOS 13 版客户端（`com.tencent.QQMusicMac` 容器）的
+`Application Support/QQMusicMac/iData/MMKVStreamEncryptId` 实测通篇是 0，`qqmusic.sqlite` 里也没有
+ekey 列；把这个空库传给 `um v0.2.12` 会直接 panic（`mmkv/vault.go:90` 越界），比报错更糟。
+所以这类文件在本应用里转不了，界面按 `read key from mmkv failed` 给中文原因，
+不照抄 um 的「no any decoder can resolve the file」。酷狗的 `kgg`（v11 PC 端）同理要 `--kgg-db`。
 
 ## 这个二进制是怎么来的
 
