@@ -117,7 +117,16 @@
           <DataGrid.Columns>
             <DataGridTextColumn x:DataType="local:Job" Header="文件名" Binding="{Binding Name}" SortMemberPath="Name" Width="2*" />
             <DataGridTextColumn x:DataType="local:Job" Header="所在文件夹" Binding="{Binding Folder}" SortMemberPath="Folder" Width="2*" />
-            <DataGridTextColumn x:DataType="local:Job" Header="状态" Binding="{Binding Status}" SortMemberPath="Status" Width="84" />
+            <!-- 状态要按值上色，DataGridTextColumn 的 Foreground 是整列的，只能用模板列；
+                 边距对齐 DataGridTextColumn 自己生成的 TextBlock。 -->
+            <DataGridTemplateColumn Header="状态" SortMemberPath="Status" Width="84">
+              <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate x:DataType="local:Job">
+                  <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}"
+                             Margin="12,0" VerticalAlignment="Center" />
+                </DataTemplate>
+              </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
             <DataGridTextColumn x:DataType="local:Job" Header="说明" Binding="{Binding Note}" SortMemberPath="Note" Width="3*" />
           </DataGrid.Columns>
         </DataGrid>

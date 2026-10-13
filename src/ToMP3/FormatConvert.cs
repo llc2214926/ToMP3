@@ -188,10 +188,8 @@ public static class FormatConvert
                                    ?? Line(outText, "[Exception]")
                                    ?? (outText.Length > 0 ? outText : "ncmdump 没有输出"));
 
-        var notes = new List<string>();
-        int warns = outText.Split('\n').Count(l => l.StartsWith("[Warn]", StringComparison.Ordinal));
-        if (warns > 0) notes.Add($"ncmdump 打了 {warns} 条警告（不影响产物）");
-        return new ConvertResult(true, string.Join(" · ", notes), produced);
+        // ncmdump 的 [Warn] 不影响产物（缺标签、封面之类），不往界面说明里写。
+        return new ConvertResult(true, "", produced);
     }
 
     // ── um：其余各家私有加密格式 ──────────────────────────────────────────────────

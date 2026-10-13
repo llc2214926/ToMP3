@@ -51,6 +51,8 @@
 - 子进程使用 `ProcessStartInfo.ArgumentList`，不拼 shell 命令；同时读取 stdout/stderr，去除 ANSI 色码，取消时终止子进程树。
 - `ncmdump` 的退出码不能证明解密成功，必须解析 `[Done]` 并验证产物存在；`um` 必须解析 `successfully converted` 日志中的 `destination` 并验证产物存在。这些检查只证明解密阶段成功，不代表最终 MP3 转换完成。
 - 当前 `um` 使用 `--overwrite`，覆盖已有产物时要如实提示；不得把“跳过已有文件”当作新转换成功。用样例副本验证，不覆盖用户原文件。
+- 「说明」列只写用户要知道的事：失败原因、覆盖提示。不影响产物的工具警告（如 `ncmdump` 的 `[Warn]`）直接标“完成”，不写说明。
+- 状态列按值上色：完成绿、失败红，其余用正文色。颜色来自 `Job.StatusBrush`，`Status` 变更要同时通知它；`DataGridTextColumn` 的 `Foreground` 是整列的，所以状态列用模板列。
 - 普通音频只做转码，不计入“加密格式”说法；界面文案写“支持 N 种格式”。加密格式必须排在 `FormatConvert.All` 中普通音频之前，否则 `.kgm.flac`、`.vpr.flac` 会被 `.flac` 抢走。
 - 需要 ekey 或外部数据库的格式不能保证仅凭扩展名就能解密。新版 QQ 音乐 `mflac`/`mgg`（文件尾 `musicex`）的密钥在客户端里，`um` 报 `read key from mmkv failed` 时必须给出中文原因，不照抄 `no any decoder can resolve the file`。
 - 不启用 `um --update-metadata`；解密与最终转码分开，FFmpeg 转码时复制已有标签和封面。调整工具版本或调用参数前先读对应的 `Assets/*/README.md`，保留来源及许可。

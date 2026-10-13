@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 
 namespace ToMP3;
@@ -11,6 +12,11 @@ namespace ToMP3;
 /// <summary>待转清单里的一行。Status / Note 要跟着转换过程变，所以走 INotifyPropertyChanged。</summary>
 public class Job(string path) : INotifyPropertyChanged
 {
+    /// <summary>状态列的颜色：完成绿、失败红，其余跟正文色。</summary>
+    static readonly IBrush Done = new SolidColorBrush(Color.FromRgb(0x15, 0x9F, 0x4A));
+    static readonly IBrush Failed = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+    static readonly IBrush Plain = new SolidColorBrush(Color.FromRgb(0x11, 0x18, 0x27));
+
     public string Path { get; } = path;
     public string Name => System.IO.Path.GetFileName(Path);
     public string Folder => System.IO.Path.GetDirectoryName(Path) ?? "";
@@ -22,8 +28,10 @@ public class Job(string path) : INotifyPropertyChanged
     public string Status
     {
         get => _status;
-        set { _status = value; P(nameof(Status)); }
+        set { _status = value; P(nameof(Status)); P(nameof(StatusBrush)); }
     }
+
+    public IBrush StatusBrush => _status switch { "完成" => Done, "失败" => Failed, _ => Plain };
 
     string _note = "";
     public string Note
