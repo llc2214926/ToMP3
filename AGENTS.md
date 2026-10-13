@@ -100,6 +100,11 @@ Release 默认启用 `PublishTrimmed=true`、`TrimMode=partial`；界面使用�
  dotnet publish src/ToMP3/ToMP3.csproj -c Release -r osx-arm64 --self-contained true -o dist/ToMP3.app/Contents/MacOS/
  codesign --force --deep --sign - dist/ToMP3.app
  ditto -c -k --sequesterRsrc --keepParent dist/ToMP3.app dist/ToMP3-macOS-arm64.zip
+
+# 拖拽安装用的 dmg：暂存目录里只放 app 和 /Applications 软链，避免把 .DS_Store 之类打进去
+ rm -rf artifacts/dmg && mkdir -p artifacts/dmg/ToMP3
+ ditto dist/ToMP3.app artifacts/dmg/ToMP3/ToMP3.app && ln -s /Applications artifacts/dmg/ToMP3/Applications
+ hdiutil create -volname ToMP3 -srcfolder artifacts/dmg/ToMP3 -fs HFS+ -format UDZO -imagekey zlib-level=9 -ov dist/ToMP3-macOS-arm64.dmg
 ```
 
 - 应用与检查项目位于独立目录，验证程序通过项目引用使用真实应用，无需主项目排除测试源码。
