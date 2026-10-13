@@ -55,6 +55,7 @@
 - 当前 `um` 使用 `--overwrite`，覆盖已有产物时要如实提示；不得把“跳过已有文件”当作新转换成功。用样例副本验证，不覆盖用户原文件。
 - 「说明」列只写用户要知道的事：失败原因、覆盖提示。不影响产物的工具警告（如 `ncmdump` 的 `[Warn]`）直接标“完成”，不写说明。
 - 状态列按值上色：完成绿、失败红，其余用正文色。颜色来自 `Job.StatusBrush`，`Status` 变更要同时通知它；`DataGridTextColumn` 的 `Foreground` 是整列的，所以状态列用模板列。
+- 单元格文字放不下时给省略号，完整内容挂悬停提示（`ToolTip.ShowDelay` 设 0，鼠标放上即显示），不硬裁切。提示经 `TipText` 转换器把空字符串变 null——`ToolTip` 只要 Tip 非 null 就会弹出空白小框；状态列放得下，本地 `ToolTip.Tip="{x:Null}"` 关掉重复提示。
 - 普通音频只做转码，不计入“加密格式”说法；界面文案写“支持 N 种格式”。加密格式必须排在 `FormatConvert.All` 中普通音频之前，否则 `.kgm.flac`、`.vpr.flac` 会被 `.flac` 抢走。
 - `musicex` 文件的 ekey 只能联网换：`QqEkey.cs` 按文件尾的歌曲 mid 和资源文件名调 `music.vkey.GetEVkey`（`filename` 必须带加密后缀、`songtype` 必须是 1），把返回的 ekey 写成临时副本的旧版「裸密钥」尾部，解密仍由 `um` 完成，不在应用里实现 QMC 算法。副本只在临时目录里，用户原文件只读。
 - 登录凭据取自 `~/Library/Preferences/com.tencent.QQMusicMac.plist` 的 `AutoLoginUserInfo`（NSKeyedArchiver），用系统 `plutil` 转换读取，只在内存里用：不落盘、不写日志、不进界面文案。

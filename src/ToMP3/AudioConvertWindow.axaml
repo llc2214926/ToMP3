@@ -12,12 +12,25 @@
         FontSize="13" Icon="/Assets/icon.png"
         Background="{StaticResource BrushWindowBg}">
 
+  <Window.Resources>
+    <local:TipText x:Key="TipText" />
+  </Window.Resources>
+
   <Window.Styles>
     <Style Selector="DataGrid">
       <Setter Property="RowHeight" Value="40" />
     </Style>
+    <!-- 单元格文字放不下时给省略号，并把完整内容挂成悬停提示：文件名、路径和失败原因都可能超宽，
+         硬裁切会把字切掉一半。列仍可拖宽（CanUserResizeColumns）。 -->
     <Style Selector="DataGridCell">
       <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <Style Selector="DataGridCell TextBlock">
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+      <Setter Property="ToolTip.Tip" Value="{Binding $self.Text, Converter={StaticResource TipText}}" />
+      <!-- 默认 400ms 才弹，看被截断的文字要等；鼠标放上就显示。 -->
+      <Setter Property="ToolTip.ShowDelay" Value="0" />
+      <Setter Property="ToolTip.BetweenShowDelay" Value="0" />
     </Style>
   </Window.Styles>
 
@@ -122,8 +135,9 @@
             <DataGridTemplateColumn Header="状态" SortMemberPath="Status" Width="84">
               <DataGridTemplateColumn.CellTemplate>
                 <DataTemplate x:DataType="local:Job">
+                  <!-- 状态列永远放得下，不需要悬停提示（本地值盖掉公共样式里的 Tip）。 -->
                   <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}"
-                             Margin="12,0" VerticalAlignment="Center" />
+                             Margin="12,0" VerticalAlignment="Center" ToolTip.Tip="{x:Null}" />
                 </DataTemplate>
               </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>

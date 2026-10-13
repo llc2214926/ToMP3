@@ -44,6 +44,17 @@ public class Job(string path) : INotifyPropertyChanged
     void P(string n) => PropertyChanged?.Invoke(this, new(n));
 }
 
+/// <summary>单元格悬停提示用：空字符串转成 null。<c>ToolTip</c> 只要 Tip 不是 null 就会弹，
+/// 否则没有说明的那些行会悬停出一个空白小框。</summary>
+public sealed class TipText : Avalonia.Data.Converters.IValueConverter
+{
+    public object? Convert(object? value, Type target, object? parameter, System.Globalization.CultureInfo culture)
+        => value is string s && s.Length > 0 ? s : null;
+
+    public object? ConvertBack(object? value, Type target, object? parameter, System.Globalization.CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 /// <summary>「各种格式转 MP3」：选文件 / 拖文件 → 按扩展名挑转换器 → 串行转换 → 看每行结果。
 /// 一体式标题栏保留原生窗口按钮；紧凑设置区支持折叠说明，原生选择窗口可同时选择文件/文件夹。
 /// 转换器内核对界面一无所知，加格式只动 <see cref="FormatConvert.All"/>。</summary>
