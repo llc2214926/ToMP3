@@ -78,10 +78,31 @@ public partial class AudioConvertWindow : Window
         FormatSummary.Text = $"支持 {FormatConvert.Count} 种音乐格式 · 查看完整列表";
         ShowOutDir();
         Report();
+        ApplyPlatform();
 
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
+    }
+
+    /// <summary>两个平台的窗口装饰与选择入口不一样：
+    /// macOS 保留一体化标题栏（给红黄绿让位），关于窗口走原生应用菜单；
+    /// Windows 交给系统标题栏，自绘那条整行藏掉，「关于」按钮和文件/文件夹双入口显现。</summary>
+    void ApplyPlatform()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            ExtendClientAreaToDecorationsHint = false;
+            TitleBar.IsVisible = false;
+            BtnPickAll.IsVisible = false;
+            MenuReveal.Header = "在资源管理器中显示";
+        }
+        else
+        {
+            BtnAbout.IsVisible = false;
+            BtnPickFiles.IsVisible = false;
+            BtnPickFolder.IsVisible = false;
+        }
     }
 
     void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -104,13 +125,27 @@ public partial class AudioConvertWindow : Window
 
     void OnPickSources(object? sender, RoutedEventArgs e)
     {
-        foreach (var path in MacSourcePicker.Pick())
+        foreach (var path in SourcePicker.Pick()) Ingest(path);
+    }
+
+    async void OnPickFiles(object? sender, RoutedEventArgs e)
+    {
+        foreach (var path in await SourcePicker.PickFilesAsync(this)) Ingest(path);
+    }
+
+    async void OnPickFolder(object? sender, RoutedEventArgs e)
+    {
+        foreach (var path in await SourcePicker.PickFoldersAsync(this)) Ingest(path);
+    }
+
+    void OnAbout(object? sender, RoutedEventArgs e) => (Avalonia.Application.Current as App)?.ShowAbout();
+
+    void Ingest(string path)
+    {
+        try { Add(path, Directory.Exists(path)); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            try { Add(path, Directory.Exists(path)); }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                Say($"无法读取 {System.IO.Path.GetFileName(path)}：{ex.Message}");
-            }
+            Say($"无法读取 {System.IO.Path.GetFileName(path)}：{ex.Message}");
         }
     }
 
@@ -272,9 +307,19 @@ public partial class AudioConvertWindow : Window
         Reveal(dir);
     }
 
-    /// <summary>在访达里定位（文件用 -R 选中，目录直接打开）。</summary>
+    /// <summary>在文件管理器里定位：macOS 用 open（文件加 -R 选中，目录直接打开）；
+    /// Windows 用 explorer /select,（目录也走 /select 打开其父目录并选中）。
+    /// explorer 即使成功也常返回退出码 1，所以不看退出码。</summary>
     static void Reveal(string path)
     {
+        if (OperatingSystem.IsWindows())
+        {
+            // explorer 的 /select 参数必须整段带引号，且路径要用反斜杠。
+            Process.Start(new ProcessStartInfo("explorer.exe")
+            { UseShellExecute = false, ArgumentList = { "/select," + Path.GetFullPath(path) } });
+            return;
+        }
+
         var psi = new ProcessStartInfo("open") { UseShellExecute = false };
         if (File.Exists(path)) psi.ArgumentList.Add("-R");
         psi.ArgumentList.Add(path);

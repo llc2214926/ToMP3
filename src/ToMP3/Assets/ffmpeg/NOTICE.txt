@@ -1,10 +1,11 @@
 FFmpeg 8.0.3 与 LAME 3.100
 
-本目录的 ffmpeg、ffprobe 为 macOS arm64 独立命令行工具，仅由 ToMP3 通过子进程调用。
-FFmpeg 和 libmp3lame 静态链接，动态依赖仅来自 macOS 系统库；运行不需要 Homebrew、额外 FFmpeg 或网络。
-本构建的 macOS 部署目标为 12.0。未启用 GPL 或 nonfree 组件。
-本构建仅用于音频转换：保留原有全部 211 个音频解码器和解封装器，去除无关视频/字幕解码器、视频滤镜和缩放库；保留 PNG/JPEG/BMP 封面支持及音频重采样。PNG 解码使用 macOS 系统 zlib。
-MP3 编码参数和标签映射未改变，已有 MP3 音轨仍直接复制；该工具不是通用视频转换器。升级后需比较音频解码器集合，并验证 FLAC、MP3、AAC、ALAC、Vorbis、Opus、PCM、WMA 及 PNG/JPEG 封面的真实转换。
+本目录的 ffmpeg/ffprobe 为独立命令行工具，仅由 ToMP3 通过子进程调用，按平台各一份：
+macOS arm64（Mach-O）与 Windows x64（PE32+，文件名带 .exe）。两个平台由同一份源码、
+同一段解码器筛选逻辑构建，见 build.sh 的 mac / win 分支。
+FFmpeg 和 libmp3lame 静态链接：macOS 版动态依赖仅来自系统库（libz 来自系统），
+Windows 版动态依赖仅来自系统 DLL（zlib 随包源码静态编入）。运行不需要 Homebrew、额外 FFmpeg 或网络。
+macOS 部署目标为 12.0。未启用 GPL 或 nonfree 组件。
 
 许可：
 - FFmpeg：Copyright (c) 2000-2026 the FFmpeg developers，LGPL-2.1-or-later，全文见 FFmpeg-LICENSE.txt。
@@ -20,9 +21,13 @@ MP3 编码参数和标签映射未改变，已有 MP3 音轨仍直接复制；�
   https://downloads.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz
   SHA-256: ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e
   校验值与 Homebrew LAME 3.100 配方一致。
+- source/zlib-1.3.1.tar.gz
+  https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz
+  SHA-256: 9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23
+  macOS 用系统 libz；Windows 没有系统 zlib，用这份源码交叉编译静态库（PNG 封面解码依赖它）。
 
-两份源码均未修改，构建参数完整保留在 build.sh。
-重建：在装有 Xcode 命令行工具的 Apple Silicon Mac 上运行：
-  bash build.sh /绝对路径/artifacts/ffmpeg-build
-脚本将从随附源码重建并替换当前目录的两个工具。可修改源码及相应校验值，重建使用修改版本。
-运行 ToMP3 不需要这些构建工具；构建脚本和源码仅用于许可履行及复现。
+三份源码均未修改，构建参数完整保留在 build.sh。重建：
+  bash src/ToMP3/Assets/ffmpeg/build.sh /绝对路径/artifacts/ffmpeg-build       # macOS arm64，需要 Xcode 工具
+  bash src/ToMP3/Assets/ffmpeg/build.sh /绝对路径/artifacts/ffmpeg-build win   # Windows x64，需要 mingw-w64 与 nasm
+脚本将从随附源码重建并替换当前目录对应平台的工具。可修改源码及相应校验值，重建使用修改版本。
+运行 ToMP3 不需要这些构建工具；构建脚本和源码仅用于许可履行与复现。

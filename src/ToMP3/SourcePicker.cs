@@ -1,12 +1,19 @@
 using System.Runtime.InteropServices;
+using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 
 namespace ToMP3;
 
-/// <summary>macOS 原生混合选择窗口。Avalonia 11 的 StorageProvider 将文件和文件夹选择分开，
-/// 这里使用 NSOpenPanel 在一次选择中同时接收两者；取消返回空数组，不改变原清单。</summary>
-internal static class MacSourcePicker
+/// <summary>选输入文件/文件夹。
+/// macOS 用原生 NSOpenPanel：Avalonia 11 的 StorageProvider 把文件和文件夹选择分开，
+/// 而 NSOpenPanel 能在一次选择里同时接收两者。Windows 的系统对话框（IFileOpenDialog）
+/// 在 FOS_PICKFOLDERS 与文件模式之间只能二选一，所以那边拆成两个入口。
+/// 取消一律返回空数组，不改变原清单。</summary>
+internal static class SourcePicker
 {
+    /// <summary>一次选择文件或文件夹（仅 macOS）。Windows 上走 <see cref="PickFilesAsync"/> /
+    /// <see cref="PickFoldersAsync"/>。</summary>
     public static string[] Pick()
     {
         Dispatcher.UIThread.VerifyAccess();
@@ -36,6 +43,26 @@ internal static class MacSourcePicker
         }
         finally { Set(pool, Sel("drain")); }
     }
+
+    /// <summary>多选文件（Windows）。不加扩展名过滤：单独加入不支持的文件应在清单里
+    /// 显示「跳过」，而不是选不出来。</summary>
+    public static async Task<string[]> PickFilesAsync(Window owner)
+    {
+        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        { Title = "选择音乐文件", AllowMultiple = true });
+        return Paths(files);
+    }
+
+    /// <summary>多选文件夹（Windows）；调用方负责递归展开。</summary>
+    public static async Task<string[]> PickFoldersAsync(Window owner)
+    {
+        var folders = await owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        { Title = "选择文件夹", AllowMultiple = true });
+        return Paths(folders);
+    }
+
+    static string[] Paths(IReadOnlyList<IStorageItem> items) =>
+        items.Select(i => i.TryGetLocalPath()).Where(p => p is not null).Select(p => p!).ToArray();
 
     static nint Text(string text) => String(GetClass("NSString"), Sel("stringWithUTF8String:"), text);
     const string Library = "/usr/lib/libobjc.A.dylib";

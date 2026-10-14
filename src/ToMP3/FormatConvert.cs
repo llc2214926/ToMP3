@@ -23,10 +23,16 @@ public sealed record Converter(string Name, string[] Inputs,
 /// 两者都在 <c>Assets/</c> 下，各自的 README 写了出处、版本、许可和换版本的坑。</summary>
 public static class FormatConvert
 {
-    /// <summary>随包发布的两个可执行文件：相对 AppContext.BaseDirectory 找，publish 到
-    /// ToMP3.app/Contents/MacOS 后相对路径不变。</summary>
-    static readonly string Ncmdump = Path.Combine(AppContext.BaseDirectory, "Assets", "ncmdump", "ncmdump");
-    static readonly string Um = Path.Combine(AppContext.BaseDirectory, "Assets", "um", "um");
+    /// <summary>随包发布的三个可执行文件：相对 AppContext.BaseDirectory 找，publish 到
+    /// ToMP3.app/Contents/MacOS 或 Windows 输出目录后相对路径不变。
+    /// Windows 上是 `.exe`，macOS 上没有后缀，所以统一过 <see cref="Tool"/>。</summary>
+    static string Tool(string dir, string name) =>
+        Path.Combine(AppContext.BaseDirectory, "Assets", dir,
+            name + (OperatingSystem.IsWindows() ? ".exe" : ""));
+
+    static readonly string Ncmdump = Tool("ncmdump", "ncmdump");
+    static readonly string Um = Tool("um", "um");
+
 
     /// <summary>两家工具日志里的 ANSI 颜色序列（SGR）。</summary>
     static readonly System.Text.RegularExpressions.Regex Ansi =
@@ -87,10 +93,10 @@ public static class FormatConvert
         Func<string, string, CancellationToken, Task<ConvertResult>> decrypt)
     {
         if (ct.IsCancellationRequested) return ConvertResult.Fail("已取消");
-        var ffmpeg = Path.Combine(AppContext.BaseDirectory, "Assets", "ffmpeg", "ffmpeg");
-        var ffprobe = Path.Combine(AppContext.BaseDirectory, "Assets", "ffmpeg", "ffprobe");
+        var ffmpeg = Tool("ffmpeg", "ffmpeg");
+        var ffprobe = Tool("ffmpeg", "ffprobe");
         if (!File.Exists(ffmpeg) || !File.Exists(ffprobe))
-            return ConvertResult.Fail("应用内置 FFmpeg 文件缺失，请重新安装完整的 ToMP3.app");
+            return ConvertResult.Fail("应用内置 FFmpeg 文件缺失，请重新安装完整的 ToMP3");
         EnsureExecutable(ffmpeg);
         EnsureExecutable(ffprobe);
 
@@ -132,14 +138,21 @@ public static class FormatConvert
         }
         finally
         {
-            // 中间产物只移入废纸篓，不直接删除；不会触碰源文件。
-            var trash = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".Trash");
+            // 中间产物只移入废纸篓（Windows 是回收站），不直接删除；不会触碰源文件。
             try
             {
-                Directory.CreateDirectory(trash);
-                Directory.Move(work, Path.Combine(trash, "ToMP3-" + Guid.NewGuid().ToString("N")));
+                if (OperatingSystem.IsWindows())
+                    Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(work,
+                        Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+                        Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin);
+                else
+                {
+                    var trash = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".Trash");
+                    Directory.CreateDirectory(trash);
+                    Directory.Move(work, Path.Combine(trash, "ToMP3-" + Guid.NewGuid().ToString("N")));
+                }
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex)
             {
                 Trace.TraceWarning($"中间文件保留在 {work}：{ex.Message}");
             }
@@ -163,7 +176,7 @@ public static class FormatConvert
     /// 走哪条流也不固定（反正 stdout/stderr 都读），所以先合并再剥色码。</summary>
     static async Task<ConvertResult> NcmToMp3(string src, string outDir, CancellationToken ct)
     {
-        if (!File.Exists(Ncmdump)) return ConvertResult.Fail("找不到内置 ncmdump（Assets/ncmdump/ncmdump）");
+        if (!File.Exists(Ncmdump)) return ConvertResult.Fail($"找不到内置 ncmdump（{Ncmdump}）");
         EnsureExecutable(Ncmdump);
 
 
@@ -200,7 +213,7 @@ public static class FormatConvert
     /// 永远报 magic mismatch），而且它只会去客户端 MMKV 找密钥——macOS 客户端那个库是空的。</summary>
     static async Task<ConvertResult> UmToAudio(string src, string outDir, CancellationToken ct)
     {
-        if (!File.Exists(Um)) return ConvertResult.Fail("找不到内置 um（Assets/um/um）");
+        if (!File.Exists(Um)) return ConvertResult.Fail($"找不到内置 um（{Um}）");
         EnsureExecutable(Um);
 
         var first = await RunUm(src, outDir, ct);

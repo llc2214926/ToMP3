@@ -35,29 +35,43 @@
   </Window.Styles>
 
   <DockPanel LastChildFill="True">
-    <!-- 原生红黄绿按钮保留在左侧，整条顶部区域与窗口使用同一背景。 -->
-    <Border DockPanel.Dock="Top" Height="64" Background="Transparent" PointerPressed="OnTitleBarPointerPressed">
-      <Grid Margin="100,0,24,0" ColumnDefinitions="Auto,*,Auto">
+    <!-- 原生红黄绿按钮保留在左侧，整条顶部区域与窗口使用同一背景。
+         Windows 交给系统标题栏，这一整条会隐藏（见 ApplyPlatform）。 -->
+    <Border x:Name="TitleBar" DockPanel.Dock="Top" Height="64" Background="Transparent"
+            PointerPressed="OnTitleBarPointerPressed">
+      <Grid Margin="100,0,24,0" ColumnDefinitions="Auto,*">
         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" IsHitTestVisible="False">
           <Image Source="/Assets/icon.png" Width="32" Height="32" />
           <TextBlock Text="ToMP3" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center"
                      Foreground="{StaticResource BrushTextPrimary}" />
         </StackPanel>
-        <TextBlock Grid.Column="2" Text="让音乐自由播放" FontSize="12" VerticalAlignment="Center"
-                   IsHitTestVisible="False" Foreground="{StaticResource BrushTextSecondary}" />
+        <TextBlock Grid.Column="1" Text="让音乐自由播放" FontSize="12" VerticalAlignment="Center"
+                   HorizontalAlignment="Right" IsHitTestVisible="False"
+                   Foreground="{StaticResource BrushTextSecondary}" />
       </Grid>
     </Border>
 
     <StackPanel x:Name="HeaderPanel" DockPanel.Dock="Top" Margin="24,8,24,10" Spacing="10">
-      <Grid ColumnDefinitions="*,Auto">
+      <Grid ColumnDefinitions="*,Auto,Auto">
         <StackPanel Spacing="5">
           <TextBlock Text="音乐格式转换" FontSize="24" FontWeight="SemiBold"
                      Foreground="{StaticResource BrushTextPrimary}" />
           <TextBlock Text="添加音乐文件，选择位置，开始转换。" FontSize="12"
                      Foreground="{StaticResource BrushTextSecondary}" />
         </StackPanel>
-        <Button Grid.Column="1" Content="选择文件夹/文件" Classes="primary" Click="OnPickSources"
-                VerticalAlignment="Center" ToolTip.Tip="可同时选择文件和文件夹；文件夹会递归查找支持的格式" />
+        <!-- macOS 的 NSOpenPanel 能一次同选文件和文件夹；Windows 的系统对话框只能二选一，
+             所以那边显示两个按钮（可见性在构造函数里按平台切）。 -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,8,0">
+          <Button x:Name="BtnPickAll" Content="选择文件夹/文件" Classes="primary" Click="OnPickSources"
+                  ToolTip.Tip="可同时选择文件和文件夹；文件夹会递归查找支持的格式" />
+          <Button x:Name="BtnPickFiles" Content="选择文件" Classes="primary" Click="OnPickFiles"
+                  ToolTip.Tip="可多选；不支持的文件会标「跳过」" />
+          <Button x:Name="BtnPickFolder" Content="选择文件夹" Classes="primary" Click="OnPickFolder"
+                  ToolTip.Tip="递归查找文件夹里支持的格式，跳过隐藏文件" />
+        </StackPanel>
+        <!-- macOS 从原生应用菜单打开关于窗口；Windows 没有原生菜单，用这个按钮。 -->
+        <Button Grid.Column="2" x:Name="BtnAbout" Content="关于" Classes="quiet compact"
+                VerticalAlignment="Center" Click="OnAbout" ToolTip.Tip="关于 ToMP3" />
       </Grid>
 
       <Border Background="{StaticResource BrushCard}" BorderBrush="{StaticResource BrushBorder}"
@@ -121,7 +135,7 @@
                   DoubleTapped="OnRowDoubleTapped">
           <DataGrid.ContextMenu>
             <ContextMenu>
-              <MenuItem Header="在访达中显示" Click="OnReveal" />
+              <MenuItem x:Name="MenuReveal" Header="在访达中显示" Click="OnReveal" />
               <MenuItem Header="重新转换" Click="OnRedo" />
               <Separator />
               <MenuItem Header="移除" Click="OnRemove" />

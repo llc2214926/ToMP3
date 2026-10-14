@@ -22,24 +22,24 @@
 ## 项目事实与入口
 
 - 技术栈：C#、.NET 8、Avalonia 11.2.3，命名空间 `ToMP3`，启用可空引用类型。
-- 当前实际运行目标为 macOS Apple Silicon：原生文件选择器依赖 AppKit/Objective-C，内置转换工具为 macOS arm64。不能因 Avalonia 支持跨平台就宣称本项目已支持 Windows/Linux。
+- 实际运行目标是 macOS Apple Silicon 与 Windows x64 两个平台，同一份 Avalonia 代码按运行时分派：macOS 用原生 `NSOpenPanel`（AppKit/Objective-C）、原生应用菜单与一体化标题栏；Windows 用系统文件/文件夹对话框、系统标题栏与标题栏「关于」按钮。两个平台的内置转换工具各自随包，见下。不要因为 Avalonia 能跑 Linux/移动端就宣称支持它们；x86（32 位）Windows 不在支持范围。
 - 产品要求：成功转换后的最终输出必须是实际 MP3 音频，不能仅把扩展名改为 `.mp3`。解密得到 FLAC、OGG、M4A 等格式时，必须继续转码为 MP3；本身已是 MP3 的无需重复编码。
 - 关于窗口和其他用户可见文案必须与 MP3 输出行为一致：不能宣称保留所有输入的原始音质，应说明非 MP3 转码有损，以及已内置转换工具。
 - 按钮样式统一在 `App.axaml`：常规按钮最小高度 40、紧凑按钮 32，内容水平和垂直居中；主操作蓝底、次操作浅底、停止操作浅红底。保留悬停、按下、禁用反馈与可见的圆角键盘焦点环，窗口内不重复覆盖公共按钮样式。
-- 转换流程：在独立临时目录解密，用 ffprobe 识别编码；MP3 音轨直接复制，其他编码通过 FFmpeg 的 libmp3lame（质量参数 `-q:a 2`）转为 MP3。实际解码校验通过后才替换目标文件，失败或取消保留旧目标；临时目录移入废纸篓。
+- 转换流程：在独立临时目录解密，用 ffprobe 识别编码；MP3 音轨直接复制，其他编码通过 FFmpeg 的 libmp3lame（质量参数 `-q:a 2`）转为 MP3。实际解码校验通过后才替换目标文件，失败或取消保留旧目标；临时目录移入废纸篓（Windows 是回收站）。
 - 输入分两类：已注册的加密格式走 `ncmdump`/`um` 解密后再转码；`flac`、`ogg`、`m4a` 等普通音频只转码不解密。`.mp3` 不认领——已是 MP3 不该重复编码，输出目录等于源目录时会覆盖用户原文件。
-- 新版 QQ 音乐（macOS 客户端 19.57+）下载的 `.mflac`/`.mgg` 文件尾是 `musicex`，密钥（ekey）不在文件里：先原样让 `um` 解一遍（老格式密钥就在文件内），失败再用 `QqEkey.cs` 联网换密钥。这条路要联网，并且要本机 QQ 音乐客户端登录过下载这些歌的账号；客户端不需要正在运行。
+- 新版 QQ 音乐（macOS 客户端 19.57+）下载的 `.mflac`/`.mgg` 文件尾是 `musicex`，密钥（ekey）不在文件里：先原样让 `um` 解一遍（老格式密钥就在文件内），失败再用 `QqEkey.cs` 联网换密钥。这条路要联网，并且要本机 QQ 音乐客户端登录过下载这些歌的账号；macOS 上客户端不需要正在运行。Windows 版的凭据来源与 macOS 不同（客户端登录态不在 plist 里），`QqEkey.cs` 目前只实现 macOS 那条路，Windows 上遇到 `musicex` 会如实报中文原因；在补上 Windows 分支前不要声称 Windows 能解这类文件。
 
 | 文件 | 职责 |
 | --- | --- |
 | `Program.cs` | Avalonia 启动入口 |
 | `App.axaml` / `App.axaml.cs` | 全局样式、原生应用菜单、窗口生命周期、异常日志 |
-| `AudioConvertWindow.axaml` / `AudioConvertWindow.axaml.cs` | 主界面、任务清单、拖放、串行转换、取消、访达定位 |
-| `FormatConvert.cs` | 格式注册、后缀匹配、子进程调用、日志解析及真实产物路径 |
-| `QqEkey.cs` | 解析 `musicex` 文件尾、读客户端登录态、换 ekey、写出带旧版密钥尾的临时副本 |
-| `MacSourcePicker.cs` | 可同时多选文件和文件夹的原生 `NSOpenPanel` |
-| `AboutWindow.axaml` / `AboutWindow.axaml.cs` | 关于窗口，从嵌入的 `Info.plist` 读取版本 |
-| `ToMP3.csproj` / `Info.plist` | 依赖、资源复制、macOS bundle 配置与版本 |
+| `AudioConvertWindow.axaml` / `AudioConvertWindow.axaml.cs` | 主界面、任务清单、拖放、串行转换、取消、按平台的文件管理器定位与标题栏分派 |
+| `FormatConvert.cs` | 格式注册、后缀匹配、按平台拼工具名、子进程调用、日志解析及真实产物路径 |
+| `QqEkey.cs` | 解析 `musicex` 文件尾、读客户端登录态（仅 macOS）、换 ekey、写出带旧版密钥尾的临时副本 |
+| `SourcePicker.cs` | 选输入：macOS 用可同时多选文件和文件夹的原生 `NSOpenPanel`；Windows 用系统的文件/文件夹对话框 |
+| `AboutWindow.axaml` / `AboutWindow.axaml.cs` | 关于窗口，从嵌入的 `Info.plist` 读取版本，平台文案按运行平台显示 |
+| `ToMP3.csproj` / `Info.plist` / `app.manifest` | 依赖、按 RID 排除另一平台资源、macOS bundle 配置与版本、Windows 长路径声明 |
 | `Assets/ncmdump/` / `Assets/um/` | 内置转换器及其来源、版本、许可和调用说明 |
 | `Assets/ffmpeg/` | 内置 ffmpeg/ffprobe、许可、对应源码和可复现构建脚本 |
 | 仓库根目录下 `tests/ToMP3.Smoke/Program.cs` | 原生菜单、关于窗口和窄窗口布局冒烟检查 |
@@ -65,20 +65,21 @@
 - 文件夹递归导入只收支持的格式并跳过隐藏文件名；单独加入不支持的文件应在清单中显示“跳过”，而不是静默丢弃。
 - 原生选择器在 UI 线程调用；取消选择不改变清单。关于窗口重复打开复用现有实例，关闭后允许重新创建。
 - 版本以 `Info.plist` 为单一来源，不在关于窗口硬编码另一份版本号。
+- 平台差异集中在少数几个分派点，不引入平台抽象接口：工具名后缀与临时目录清理在 `FormatConvert`，选择器在 `SourcePicker`，窗口装饰/按钮可见性/定位在 `AudioConvertWindow`，日志目录在 `App`。Windows 上系统标题栏与「关于」按钮替代 macOS 的原生菜单；`IFileOpenDialog` 不能一次同选文件和文件夹，所以 Windows 拆成两个按钮。
 
 ## 构建、运行与发布
 
-以下命令在仓库根目录执行，需要 .NET 8 SDK；运行界面和原生检查需要 macOS 桌面。
+以下命令在仓库根目录执行，需要 .NET 8 SDK；运行界面需要 macOS 或 Windows 桌面，原生检查（`AboutSmoke`）需要 macOS。
 
 下方测试命令仅在本地保留 `tests/ToMP3.Smoke/` 时可用；新克隆需通过实际运行应用验证，不应把缺少本地测试目录当作构建失败。
 
-发布包内置 FFmpeg 8.0.3、ffprobe 和静态链接的 LAME 3.100，并自包含 .NET 运行时。目标为 macOS 12+ Apple Silicon，用户无需安装 Homebrew、FFmpeg 或 .NET。运行时仅使用 `AppContext.BaseDirectory/Assets/ffmpeg/`，不从 PATH 或开发机路径回退；缺失文件应报告应用不完整。
+发布包内置 FFmpeg 8.0.3、ffprobe 和静态链接的 LAME 3.100，并自包含 .NET 运行时。目标为 macOS 12+ Apple Silicon 与 Windows 10 1803+ x64，用户无需安装 Homebrew、FFmpeg 或 .NET。运行时仅使用 `AppContext.BaseDirectory/Assets/`，不从 PATH 或开发机路径回退；缺失文件应报告应用不完整。两个平台的可执行文件按目标 RID 互相排除，Windows 包不包含 mac 的 Mach-O 文件（含 `libtag.2.dylib`），mac 包不包含 `.exe`。
 
 Release 默认启用 `PublishTrimmed=true`、`TrimMode=partial`；界面使用编译绑定，表格列声明 `Job` 类型和 `SortMemberPath`。保留 `Avalonia.Base` 与 `Avalonia.Controls.DataGrid`，避免库内反射入口被裁掉；不屏蔽 Avalonia 11.2.3 的第三方裁剪警告。改动裁剪配置后必须用实际发布的程序集和运行时验证表格数据、状态更新、排序、拖放、原生选择器取消及关于窗口，不能只另行裁剪测试程序。
 
 切换裁剪或工具配置时发布到全新目录，验证后替换 `dist/ToMP3.app`，避免覆盖发布残留旧程序集。FFmpeg 保留原有 211 个音频解码器、全部原有解封装器及 PNG/JPEG/BMP 封面支持，移除无关视频/字幕解码与视频滤镜；完整对应源码仍随包提供，不靠删除许可或源码缩小体积。
 
-升级工具时运行 `bash src/ToMP3/Assets/ffmpeg/build.sh artifacts/ffmpeg-build`（仅构建机需要 Xcode 工具），保留 `NOTICE.txt`、许可和完整对应源码；用 `otool -L` 确认只依赖 macOS 系统库，再运行转换检查。不得直接复制 Homebrew 的动态链接二进制。
+升级工具时运行 `bash src/ToMP3/Assets/ffmpeg/build.sh artifacts/ffmpeg-build`（macOS，仅构建机需要 Xcode 工具）或 `bash src/ToMP3/Assets/ffmpeg/build.sh artifacts/ffmpeg-build win`（Windows，构建机需要 `mingw-w64` 与 `nasm`），保留 `NOTICE.txt`、许可和完整对应源码；用 `otool -L`（macOS）或 `x86_64-w64-mingw32-objdump -p`（Windows）确认只依赖系统库，再运行转换检查。不得直接复制 Homebrew 的动态链接二进制。
 
 ```bash
 # 构建
@@ -105,19 +106,23 @@ Release 默认启用 `PublishTrimmed=true`、`TrimMode=partial`；界面使用�
  rm -rf artifacts/dmg && mkdir -p artifacts/dmg/ToMP3
  ditto dist/ToMP3.app artifacts/dmg/ToMP3/ToMP3.app && ln -s /Applications artifacts/dmg/ToMP3/Applications
  hdiutil create -volname ToMP3 -srcfolder artifacts/dmg/ToMP3 -fs HFS+ -format UDZO -imagekey zlib-level=9 -ov dist/ToMP3-macOS-arm64.dmg
+
+# 发布 Windows x64 自包含应用；解压即用
+ dotnet publish src/ToMP3/ToMP3.csproj -c Release -r win-x64 --self-contained true -o dist/ToMP3-win-x64
+ (cd dist && zip -qr ToMP3-windows-x64.zip ToMP3-win-x64)
 ```
 
 - 应用与检查项目位于独立目录，验证程序通过项目引用使用真实应用，无需主项目排除测试源码。
-- 发布时保持 `Assets/<工具名>/<工具名>` 相对可执行目录的位置。发布目标包含 `ToMP3.app` 时，项目会复制 `Info.plist` 和 `icon.icns` 到 bundle 对应位置。
+- 发布时保持 `Assets/<工具名>/<工具名>` 相对可执行目录的位置（Windows 上文件名带 `.exe`，由 `FormatConvert.Tool` 按平台拼后缀）。发布目标包含 `ToMP3.app` 时，项目会复制 `Info.plist` 和 `icon.icns` 到 bundle 对应位置；Windows 可执行文件图标来自 `Assets/icon.ico`（`ApplicationIcon`，仅在 `-r win-x64` 时启用），由 `python3 src/ToMP3/Assets/make-ico.py` 从 `icon.png` 生成一次后提交。
 - 不直接修改 `bin/`、`obj/` 或 `dist/` 内生成的文件来修复问题；修改源文件后重新构建或发布。
 
 ## 验证与交付
 
 - 代码变更至少构建一次，并实际运行改动路径；编译成功不等于功能正确。纯文档变更核对引用与命令，不必无关地重打发布包。
-- 界面改动检查真实窗口：最小尺寸、格式说明展开、按钮可见性，以及受影响的原生交互。菜单与布局冒烟不代表转换已验证；转换路径另运行 `--conversion-only`，使用现场生成的正弦音 NCM、KWM 容器校验两种工具的真实解密与 MP3 编码，并检查 MP3 无重复编码及目标文件保护。
-- 无环境依赖发布：转换检查必须使用内置工具并排除 Homebrew PATH；发布后检查包内工具动态依赖，并把 app 复制到新路径验证，不能只在开发目录成功就宣称独立运行。
+- 界面改动检查真实窗口：最小尺寸、格式说明展开、按钮可见性，以及受影响的原生交互。macOS 检查原生菜单、`NSOpenPanel` 取消与一体化标题栏；Windows 检查系统标题栏、标题栏「关于」按钮、文件/文件夹两个选择入口、资源管理器定位。菜单与布局冒烟不代表转换已验证；转换路径另运行 `--conversion-only`，使用现场生成的正弦音 NCM、KWM 容器校验两种工具的真实解密与 MP3 编码，并检查 MP3 无重复编码及目标文件保护。`--conversion-only` 不依赖图形环境，两个平台都能跑；`AboutSmoke` 的原生菜单检查只能在 macOS 跑。
+- 无环境依赖发布：转换检查必须使用内置工具并排除 Homebrew PATH；发布后检查包内工具动态依赖（macOS 用 `otool -L`，Windows 用 `x86_64-w64-mingw32-objdump -p`），并把应用复制到新路径验证，不能只在开发目录成功就宣称独立运行。Windows 包必须确认不含 Mach-O 文件与 `.dylib`。
 - 转换改动使用有权处理的真实样例副本和独立输出目录，检查成功产物、失败原因、取消及覆盖提示；没有样例时明确说明验证缺口，不宣称转换通过。
-- `musicex` 取密钥这条路必须用真实 `.mflac`/`.mgg` 副本跑通到 MP3，并单独验证没有登录态时的中文指引（可用临时 `HOME` 指向空目录触发，不要动用户的 plist）。缺网络或客户端未登录时如实说明这部分未验证，不靠文件尾解析成功就宣称能解密。
+- `musicex` 取密钥这条路（macOS）必须用真实 `.mflac`/`.mgg` 副本跑通到 MP3，并单独验证没有登录态时的中文指引（可用临时 `HOME` 指向空目录触发，不要动用户的 plist）。缺网络或客户端未登录时如实说明这部分未验证，不靠文件尾解析成功就宣称能解密。Windows 上这条路尚未实现，必须如实报告不支持，不能含糊说“支持 QQ 音乐”。
 - 缺陷先复现再修复；为有风险的分支保留最小可运行回归检查，不为字段转发、源码文字或偶然实现细节堆测试。
 - 工具升级需验证二进制能实际启动，并跑真实转换；仅检查版本号不够。排查隔离属性前核实来源，不盲目移除安全属性。
 - 行为或调用约定变化时同步相关文档。交付说明改了什么、实际执行的验证及未验证项，不编造结果。

@@ -28,19 +28,44 @@
     <TrimmerRootAssembly Include="Avalonia.Base" />
   </ItemGroup>
 
-  <!-- 窗口/任务栏图标（Win/Linux 用；PNG 直接嵌进程序集） -->
+  <!-- 窗口/任务栏图标。icon.png 嵌进程序集供 Avalonia 用；icon.ico 只给 Windows
+       可执行文件（由 Assets/make-ico.py 从 icon.png 生成，生成一次后提交）。 -->
   <ItemGroup>
     <AvaloniaResource Include="Assets/icon.png" />
     <!-- 关于窗口与发布包读取同一份版本信息，避免手动维护两份版本号。 -->
     <EmbeddedResource Include="Info.plist" LogicalName="ToMP3.Info.plist" />
   </ItemGroup>
 
+  <!-- Windows 可执行文件的图标（由 Assets/make-ico.py 从 icon.png 生成，生成一次后提交）。
+       macOS 的 Dock 图标走 bundle 里的 icon.icns，不用这个。 -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+    <ApplicationIcon>Assets/icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
   <!-- 解密工具 ncmdump、um（MIT）与 FFmpeg 音频工具（LGPL）随包复制，
-       包含对应许可和源码；运行时只按 AppContext.BaseDirectory/Assets 找工具。 -->
+       包含对应许可和源码；运行时只按 AppContext.BaseDirectory/Assets 找工具。
+
+       两个平台的可执行文件格式不同（Mach-O / PE），必须按目标 RID 互相排除，
+       否则 Windows 包里会混进 mac 的 Mach-O 文件。没有指定 RID 时（普通 dotnet build
+       与 macOS 发布）只带 mac 的一套；build.sh 与 source/ 是许可与复现用的文本，
+       与平台无关，两个包都带。 -->
   <ItemGroup>
-    <Content Include="Assets/ncmdump/**" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="Assets/um/**" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="Assets/ffmpeg/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets/ncmdump/**" CopyToOutputDirectory="PreserveNewest"
+             Exclude="Assets/ncmdump/**/*.exe"
+             Condition="'$(RuntimeIdentifier)' != 'win-x64'" />
+    <Content Include="Assets/um/**" CopyToOutputDirectory="PreserveNewest"
+             Exclude="Assets/um/**/*.exe" Condition="'$(RuntimeIdentifier)' != 'win-x64'" />
+    <Content Include="Assets/ffmpeg/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
+             Exclude="Assets/ffmpeg/**/*.exe" Condition="'$(RuntimeIdentifier)' != 'win-x64'" />
+
+    <Content Include="Assets/ncmdump/**" CopyToOutputDirectory="PreserveNewest"
+             Exclude="Assets/ncmdump/**/ncmdump;Assets/ncmdump/**/*.dylib"
+             Condition="'$(RuntimeIdentifier)' == 'win-x64'" />
+    <Content Include="Assets/um/**" CopyToOutputDirectory="PreserveNewest"
+             Exclude="Assets/um/**/um" Condition="'$(RuntimeIdentifier)' == 'win-x64'" />
+    <Content Include="Assets/ffmpeg/**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
+             Exclude="Assets/ffmpeg/**/ffmpeg;Assets/ffmpeg/**/ffprobe"
+             Condition="'$(RuntimeIdentifier)' == 'win-x64'" />
   </ItemGroup>
 
   <!-- publish 到 ToMP3.app/Contents/MacOS 后回填 bundle 里 Contents/ 下的两样东西：

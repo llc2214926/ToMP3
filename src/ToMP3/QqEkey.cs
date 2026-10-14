@@ -19,6 +19,11 @@ static class QqEkey
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         "Library", "Preferences", "com.tencent.QQMusicMac.plist");
 
+    /// <summary>Windows 版客户端不把登录态写进 plist，凭据来源与 macOS 完全不同
+    /// （未落盘，只在客户端进程内存里），这条路还没实现。</summary>
+    const string WindowsUnsupported =
+        "Windows 版暂不支持联网取 QQ 音乐密钥：请改用 64 位 macOS 版，或在 Windows 上先手动解密这些文件";
+
     const string NeedLogin = "需要 QQ 音乐客户端的登录态：请打开 QQ 音乐，用下载这些歌的账号登录一次，再回来重新转换";
 
     static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(20) };
@@ -85,6 +90,8 @@ static class QqEkey
     /// 交给系统 plutil 转 XML 再读，不自己解 plist 格式；凭据只在内存里用，不落盘、不进日志。</summary>
     static async Task<(string Uin, string Authst, string LoginType)> Credentials(CancellationToken ct)
     {
+        // Windows 客户端的凭据不在 plist 里，这条路只在 macOS 上成立。
+        if (!OperatingSystem.IsMacOS()) throw new InvalidOperationException(WindowsUnsupported);
         if (!File.Exists(Prefs)) throw new InvalidOperationException(NeedLogin);
         // 装了客户端但从没登录过时，plutil 会以「No value at that key path」退 1，同样是没有登录态。
         byte[] archive;

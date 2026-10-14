@@ -6,7 +6,9 @@
 
 - 来源：https://git.unlock-music.dev/um/cli （tag `v0.2.12`，module 路径 `unlock-music.dev/cli`）
 - 版本：`um -v` → `Unlock Music CLI version v0.2.12`
-- 平台：macOS arm64 单文件（Mach-O thin arm64，13 MB）
+- 平台（两个二进制，各自随对应平台的包）：
+  - macOS arm64：`um`（Mach-O thin arm64，13 MB）
+  - Windows x64：`um.exe`（PE32+ x86-64，14 MB）
 - 许可：MIT（全文见文末）
 
 ## 支持的格式
@@ -41,24 +43,33 @@
 
 ## 这个二进制是怎么来的
 
-在 macOS arm64 + Go 上，从**官方 module 源**（`proxy.golang.org`，即 `git.unlock-music.dev/um/cli`
-的 tag 镜像）编译，不用第三方转载的成品。在仓库的 `artifacts/um-build/` 目录运行：
+在 macOS + Go 上，从**官方 module 源**（`proxy.golang.org`，即 `git.unlock-music.dev/um/cli`
+的 tag 镜像）编译，不用第三方转载的成品。两个平台的二进制来自**同一份源码**，只换 `GOOS`/`GOARCH`。
+在仓库的 `artifacts/um-build/` 目录运行：
 
 ```bash
 curl -sSL -o um.zip "https://proxy.golang.org/unlock-music.dev/cli/@v/v0.2.12.zip"
 unzip -q um.zip && cp -R "unlock-music.dev/cli@v0.2.12" umsrc && chmod -R u+w umsrc
 cd umsrc
+
+# macOS arm64
 CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 \
   go build -trimpath -ldflags="-s -w -X main.AppVersion=v0.2.12" -o ../um ./cmd/um
+
+# Windows x64
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 \
+  go build -trimpath -ldflags="-s -w -X main.AppVersion=v0.2.12" -o ../um.exe ./cmd/um
 ```
 
 换版本同理，改 `@v/<版本>` 和 `-X main.AppVersion=`，然后重跑
-本应用的临时冒烟（真文件走一遍，见下）。
+本应用的临时冒烟（真文件走一遍，见下）。两个二进制核对依赖清单：
+`go version -m um` 与 `go version -m um.exe` 的 dep 行应一致（Unix 独有平台文件引用的
+少数依赖如 `github.com/google/uuid` 只在 mac 版出现，属正常）。
 
 ## 换版本时注意
 
-下载来的副本带 `com.apple.quarantine`，macOS 会直接把它 SIGKILL（退出码 137，**连 `-v` 都跑不起来**）。
-放进本目录前要清掉，否则开发时跑不了、装到 /Applications 后也一样跑不起来：
+**仅 macOS**：下载来的副本带 `com.apple.quarantine`，macOS 会直接把它 SIGKILL（退出码 137，
+**连 `-v` 都跑不起来**）。放进本目录前要清掉，否则开发时跑不了、装到 /Applications 后也一样跑不起来：
 
 ```bash
 xattr -c src/ToMP3/Assets/um/um  # 在仓库根目录执行

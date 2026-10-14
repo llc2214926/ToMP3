@@ -15,7 +15,8 @@ public partial class AboutWindow : Window
         var metadata = XDocument.Load(stream).Root!.Element("dict")!.Elements("key")
             .ToDictionary(key => key.Value, key => key.ElementsAfterSelf().First().Value);
         VersionText.Text = $"版本 {metadata["CFBundleShortVersionString"]}（构建 {metadata["CFBundleVersion"]}）";
-        PlatformText.Text = $"macOS · {RuntimeInformation.ProcessArchitecture} · 支持 {FormatConvert.Count} 种格式";
+        PlatformText.Text = $"{(OperatingSystem.IsWindows() ? "Windows" : "macOS")} · "
+            + $"{RuntimeInformation.ProcessArchitecture} · 支持 {FormatConvert.Count} 种格式";
     }
 
     void OnClose(object? sender, RoutedEventArgs e) => Close();
