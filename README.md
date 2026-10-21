@@ -61,13 +61,19 @@ dotnet publish src/ToMP3/ToMP3.csproj -c Release -r osx-arm64 --self-contained t
 codesign --force --deep --sign - dist/ToMP3.app
 ```
 
-## 内置工具及许可
+## 许可
 
-| 工具 | 用途 | 许可 |
-|---|---|---|
-| [ncmdump](src/ToMP3/Assets/ncmdump/README.md) | 解密 `.ncm` | MIT |
-| [um](src/ToMP3/Assets/um/README.md) | 解密其余各家私有加密格式 | MIT |
-| FFmpeg / ffprobe | 解密后转码为 MP3 | LGPL |
-| LAME | MP3 编码 | LGPL |
+ToMP3 以 [MIT](LICENSE) 发布。
 
-各工具的完整许可文本与对应源码随包提供（`Assets/<工具名>/`）。
+### 内置第三方工具
+
+| 工具 | 用途 | 许可 | 随包内容 |
+|---|---|---|---|
+| [ncmdump](src/ToMP3/Assets/ncmdump/README.md) | 解密 `.ncm` | MIT | 版权声明 + 许可全文（`Assets/ncmdump/README.md` 文末） |
+| [um](src/ToMP3/Assets/um/README.md) | 解密其余各家私有加密格式 | MIT | 版权声明 + 许可全文（`Assets/um/README.md` 文末） |
+| FFmpeg / ffprobe 8.0.3 | 解密后转码 | LGPL-2.1 | `Assets/ffmpeg/FFmpeg-LICENSE.txt` + `NOTICE.txt`（含 SHA-256） |
+| LAME 3.100 | MP3 编码 | LGPL | `Assets/ffmpeg/LAME-LICENSE.txt` |
+| TagLib 2.3（ncmdump 依赖） | 音频元数据 | LGPL-2.1 / MPL | `Assets/ncmdump/TagLib-LICENSE-*.txt`、`TagLib-AUTHORS.txt` |
+| zlib 1.3.1（Windows 静态编入） | PNG 封面解码 | zlib | `Assets/ffmpeg/NOTICE.txt` 记录来源与校验值 |
+
+对应源码 tarball 与 `build.sh` 随包提供（`Assets/<工具名>/source/`），满足 LGPL 重新构建要求。本项目以独立子进程调用以上工具，不与它们产生链接关系。
