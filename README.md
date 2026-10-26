@@ -1,79 +1,76 @@
 # ToMP3
 
-把各音乐平台的加密音频和常见音频**真正转成 MP3** 的桌面小工具，支持 macOS（Apple Silicon）与 Windows x64。
+[中文](README.ZH.md) | English
 
-> **⚠ Windows 版尚未完成**：代码与发布包已就绪，但还没有在真实 Windows 环境完成验证（界面与原生交互、转换实测、`musicex` 联网换密钥）。当前请以 macOS 版为准，Windows 包仅作预览。
+A small desktop tool that **actually converts** encrypted audio from music platforms and common audio files into MP3, for macOS (Apple Silicon).
 
-不是改扩展名：解密得到 FLAC、OGG、M4A 等格式时，会用内置 FFmpeg（libmp3lame，`-q:a 2`）实际转码；本身就是 MP3 的不重复编码。转码有损，应用不会宣称保留原始音质。
+> **⚠ macOS only**: the Windows build is not part of this project's supported surface and is not described here.
 
-## 支持的格式
+Not a rename: when decryption yields FLAC, OGG, M4A and friends, the file is really transcoded with the bundled FFmpeg (libmp3lame, `-q:a 2`); files that are already MP3 are not re-encoded. Transcoding is lossy — the app never claims to preserve original audio quality.
 
-| 来源 | 格式 |
+## Supported formats
+
+| Source | Formats |
 |---|---|
-| 网易云音乐 | `.ncm` |
-| QQ 音乐 | `.qmc0/2/3/4/6/8` `.qmcflac` `.qmcogg` `.mflac*` `.mgg*` `.tkm` `.tm0/2/3/6` |
-| 酷狗音乐 | `.kgm` `.kgma` `.kgm.flac` `.kgg` `.vpr` `.vpr.flac` |
-| 酷我音乐 | `.kwm` |
-| 虾米音乐 | `.xm` |
-| 喜马拉雅 | `.x2m` `.x3m` |
-| 百度音乐 | `.bkc*` |
-| 咪咕音乐 | `.mmp4` |
-| 普通音频 | `.flac` `.ogg` `.oga` `.opus` `.m4a` `.aac` `.wav` `.aiff` `.wma` `.ape` |
+| NetEase Cloud Music | `.ncm` |
+| QQ Music | `.qmc0/2/3/4/6/8` `.qmcflac` `.qmcogg` `.mflac*` `.mgg*` `.tkm` `.tm0/2/3/6` |
+| Kugou Music | `.kgm` `.kgma` `.kgm.flac` `.kgg` `.vpr` `.vpr.flac` |
+| Kuwo Music | `.kwm` |
+| Xiami Music | `.xm` |
+| Ximalaya | `.x2m` `.x3m` |
+| Baidu Music | `.bkc*` |
+| Migu Music | `.mmp4` |
+| Plain audio | `.flac` `.ogg` `.oga` `.opus` `.m4a` `.aac` `.wav` `.aiff` `.wma` `.ape` |
 
-解密器与 FFmpeg 均随应用内置（`ncmdump`、`um`、FFmpeg 8.0.3 + 静态链接 LAME 3.100），无需安装任何依赖。
+The decryptors and FFmpeg ship inside the app (`ncmdump`, `um`, FFmpeg 8.0.3 with statically linked LAME 3.100), so nothing has to be installed.
 
-## 使用
+## Usage
 
-1. 把文件或整个文件夹拖进窗口（macOS 也可从菜单选择；Windows 分「选文件」「选文件夹」两个按钮）。
-2. 选择输出目录——保留源文件，同名输出会覆盖。
-3. 转换串行执行，可随时取消；失败或取消时旧的目标文件不会被破坏。
-4. 完成、失败、跳过等状态在清单中按行显示，可在文件管理器中定位产物。
+1. Drag files or whole folders into the window (or pick them from the native menu).
+2. Choose an output directory — source files are kept; same-name outputs overwrite.
+3. Conversion runs serially and can be cancelled at any time; on failure or cancellation the previous target file is left intact.
+4. Statuses (done, failed, skipped, …) are shown per row, and finished files can be revealed in Finder.
 
-## 已知限制
+## Known limitations
 
-- 新版 QQ 音乐（macOS 客户端 19.57+）下载的 `.mflac`/`.mgg` 密钥不在文件里，需要联网并用本机 QQ 音乐客户端登录过下载这些歌的账号后才能解密；**Windows 暂不支持**这类文件，会明确提示原因。
-- 没有登录态、凭据过期或账号无权限时，会给出中文解决途径而不是原始英文报错。
-- `.mp3` 输入不认领：已是 MP3 不重复编码。
-- x86（32 位）Windows 与 Linux/移动端不在支持范围。
+- Newer QQ Music (macOS client 19.57+) stores the key of downloaded `.mflac`/`.mgg` files outside the file, so decrypting them needs network access and a QQ Music account that was signed in on this machine when the song was downloaded.
+- Without a signed-in session, with expired credentials, or without permission for the account, the app gives a Chinese explanation and next steps instead of the raw English error.
+- `.mp3` inputs are not claimed: an MP3 is not re-encoded.
+- Linux and mobile platforms are out of scope.
 
-## 系统要求
+## System requirements
 
-- macOS 12+（Apple Silicon）
-- Windows 10 1803+（x64）
+- macOS 12+ (Apple Silicon)
 
-## 构建
+## Build
 
-需要 .NET 8 SDK；详细约定见 [AGENTS.md](AGENTS.md)。
+Requires the .NET 8 SDK; see [AGENTS.md](AGENTS.md) for the full conventions.
 
 ```bash
-# 构建
+# build
 dotnet build src/ToMP3/ToMP3.csproj -c Release
 
-# 启动开发界面
+# run the app from source
 dotnet run --project src/ToMP3/ToMP3.csproj
 
-# 发布 Windows x64 自包含包并静态校验（不需要 Windows 环境）
-dotnet publish src/ToMP3/ToMP3.csproj -c Release -r win-x64 --self-contained true -o dist/ToMP3-win-x64
-python3 scripts/check-win-package.py dist/ToMP3-win-x64
-
-# 发布 macOS arm64 自包含 .app
+# publish a self-contained macOS arm64 .app
 dotnet publish src/ToMP3/ToMP3.csproj -c Release -r osx-arm64 --self-contained true -o dist/ToMP3.app/Contents/MacOS/
 codesign --force --deep --sign - dist/ToMP3.app
 ```
 
-## 许可
+## License
 
-ToMP3 以 [MIT](LICENSE) 发布。
+ToMP3 is released under the [MIT](LICENSE) license.
 
-### 内置第三方工具
+### Bundled third-party tools
 
-| 工具 | 用途 | 许可 | 随包内容 |
+| Tool | Purpose | License | Bundled contents |
 |---|---|---|---|
-| [ncmdump](src/ToMP3/Assets/ncmdump/README.md) | 解密 `.ncm` | MIT | 版权声明 + 许可全文（`Assets/ncmdump/README.md` 文末） |
-| [um](src/ToMP3/Assets/um/README.md) | 解密其余各家私有加密格式 | MIT | 版权声明 + 许可全文（`Assets/um/README.md` 文末） |
-| FFmpeg / ffprobe 8.0.3 | 解密后转码 | LGPL-2.1 | `Assets/ffmpeg/FFmpeg-LICENSE.txt` + `NOTICE.txt`（含 SHA-256） |
-| LAME 3.100 | MP3 编码 | LGPL | `Assets/ffmpeg/LAME-LICENSE.txt` |
-| TagLib 2.3（ncmdump 依赖） | 音频元数据 | LGPL-2.1 / MPL | `Assets/ncmdump/TagLib-LICENSE-*.txt`、`TagLib-AUTHORS.txt` |
-| zlib 1.3.1（Windows 静态编入） | PNG 封面解码 | zlib | `Assets/ffmpeg/NOTICE.txt` 记录来源与校验值 |
+| [ncmdump](src/ToMP3/Assets/ncmdump/README.md) | Decrypts `.ncm` | MIT | Copyright notice + full license text (end of `Assets/ncmdump/README.md`) |
+| [um](src/ToMP3/Assets/um/README.md) | Decrypts the other vendors' private encrypted formats | MIT | Copyright notice + full license text (end of `Assets/um/README.md`) |
+| FFmpeg / ffprobe 8.0.3 | Transcoding after decryption | LGPL-2.1 | `Assets/ffmpeg/FFmpeg-LICENSE.txt` + `NOTICE.txt` (with SHA-256) |
+| LAME 3.100 | MP3 encoding | LGPL | `Assets/ffmpeg/LAME-LICENSE.txt` |
+| TagLib 2.3 (ncmdump dependency) | Audio metadata | LGPL-2.1 / MPL | `Assets/ncmdump/TagLib-LICENSE-*.txt`, `TagLib-AUTHORS.txt` |
+| zlib 1.3.1 | PNG cover decoding | zlib | Source and checksums recorded in `Assets/ffmpeg/NOTICE.txt` |
 
-对应源码 tarball 与 `build.sh` 随包提供（`Assets/<工具名>/source/`），满足 LGPL 重新构建要求。本项目以独立子进程调用以上工具，不与它们产生链接关系。
+The corresponding source tarballs and `build.sh` are shipped as well (`Assets/<tool>/source/`), satisfying the LGPL rebuild requirement. This project calls the above tools as separate subprocesses and is not linked against them.
