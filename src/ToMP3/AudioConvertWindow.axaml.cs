@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
@@ -56,7 +57,7 @@ public sealed class TipText : Avalonia.Data.Converters.IValueConverter
 }
 
 /// <summary>「各种格式转 MP3」：选文件 / 拖文件 → 按扩展名挑转换器 → 串行转换 → 看每行结果。
-/// 一体式标题栏保留原生窗口按钮；紧凑设置区支持折叠说明，原生选择窗口可同时选择文件/文件夹。
+/// 一体式标题栏保留原生窗口按钮；设置区常驻格式说明，原生选择窗口可同时选择文件/文件夹。
 /// 转换器内核对界面一无所知，加格式只动 <see cref="FormatConvert.All"/>。</summary>
 public partial class AudioConvertWindow : Window
 {
@@ -74,8 +75,16 @@ public partial class AudioConvertWindow : Window
     {
         InitializeComponent();
         Grid.ItemsSource = Items;
-        FormatHint.Text = FormatConvert.SupportList;
-        FormatSummary.Text = $"支持 {FormatConvert.Count} 种音乐格式 · 查看完整列表";
+        var categoryBrush = (IBrush)this.FindResource("BrushPrimary")!;
+        var formats = new InlineCollection { new Run($"支持 {FormatConvert.Count} 种格式：") };
+        for (int i = 0; i < FormatConvert.All.Length; i++)
+        {
+            var converter = FormatConvert.All[i];
+            if (i > 0) formats.Add(new Run(" ｜ "));
+            formats.Add(new Run(converter.Name) { Foreground = categoryBrush });
+            formats.Add(new Run(" " + string.Join(' ', converter.Inputs.Select(x => x.TrimStart('.')))));
+        }
+        FormatHint.Inlines = formats;
         ShowOutDir();
         Report();
         ApplyPlatform();
@@ -164,7 +173,7 @@ public partial class AudioConvertWindow : Window
             if (_seen.Add(f)) { Items.Add(new Job(f)); added++; }
 
         Report();
-        if (expand && added == 0) Say("这个文件夹里没有支持的音乐文件");
+        if (expand && added == 0) Say("这个文件夹里没有支持的音频或视频文件");
     }
 
     void OnRemove(object? sender, RoutedEventArgs e)

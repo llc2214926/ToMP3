@@ -72,6 +72,9 @@ public static class FormatConvert
             (src, dir, ct) => ToMp3(src, dir, ct, UmToAudio))),
         new Converter("普通音频", PlainAudio, (src, dir, ct) =>
             ToMp3(src, dir, ct, (s, _, _) => Task.FromResult(new ConvertResult(true, "", s)))),
+        new Converter("视频", [".mp4", ".mkv", ".mov", ".avi", ".webm", ".flv", ".wmv", ".asf",
+            ".m4v", ".mpg", ".mpeg", ".ts", ".mts", ".m2ts", ".3gp", ".3g2", ".vob", ".ogv", ".rm", ".rmvb"],
+            (src, dir, ct) => ToMp3(src, dir, ct, (s, _, _) => Task.FromResult(new ConvertResult(true, "", s)))),
     ];
 
     /// <summary>按扩展名找认领的转换器；不认识返回 null（界面标「跳过」）。
@@ -82,13 +85,7 @@ public static class FormatConvert
     /// <summary>认领的扩展名总数（界面上写「支持 N 种」）。</summary>
     public static int Count => All.Sum(c => c.Inputs.Length);
 
-    /// <summary>界面上那行「支持什么格式」：按平台分组、摊开全部扩展名（含 ncm 和普通音频）。数据驱动——
-    /// 加平台/扩展名只改 <see cref="All"/> 与 <see cref="UmGroups"/>，界面自动跟着变。</summary>
-    public static string SupportList =>
-        $"支持 {Count} 种格式：" + string.Join(" ｜ ",
-            All.Select(c => $"{c.Name} {string.Join(' ', c.Inputs.Select(x => x.TrimStart('.')))}"));
-
-    // 所有解密器共用：隔离中间文件，只有最终 MP3 验证成功才替换目标。
+    // 所有输入共用：隔离中间文件，只有最终 MP3 验证成功才替换目标。
     static async Task<ConvertResult> ToMp3(string src, string outDir, CancellationToken ct,
         Func<string, string, CancellationToken, Task<ConvertResult>> decrypt)
     {
@@ -110,15 +107,18 @@ public static class FormatConvert
             var probe = await Run(Command(ffprobe, "-v", "error", "-select_streams", "a:0",
                 "-show_entries", "stream=codec_name", "-of", "default=noprint_wrappers=1:nokey=1", audio), ct);
             if (probe.Canceled) return ConvertResult.Fail("已取消");
-            if (probe.ExitCode != 0 || probe.Text.Length == 0)
-                return ConvertResult.Fail("无法识别解密后的音频：" + probe.Text);
+            if (probe.ExitCode != 0)
+                return ConvertResult.Fail("无法识别文件中的音频：" + probe.Text);
+            if (probe.Text.Length == 0)
+                return ConvertResult.Fail("文件中没有可提取的音轨，请选择包含音频的文件");
 
             var output = Path.Combine(Path.GetFullPath(outDir), Path.GetFileNameWithoutExtension(audio) + ".mp3");
             // 避免解密后的文件恰好叫 final.mp3 时输入输出相同。
             var encodedDir = Directory.CreateDirectory(Path.Combine(work, "encoded")).FullName;
             var staged = Path.Combine(encodedDir, "final.mp3");
+            // 只取首条音轨及附带封面，不把普通视频画面写进 MP3。
             var args = new List<string> { "-nostdin", "-v", "error", "-y", "-i", audio,
-                "-map", "0:a:0", "-map", "0:v?", "-map_metadata", "0", "-c:v", "copy", "-c:a" };
+                "-map", "0:a:0", "-map", "0:v:disp:attached_pic?", "-map_metadata", "0", "-c:v", "copy", "-c:a" };
             args.Add(probe.Text == "mp3" ? "copy" : "libmp3lame");
             if (probe.Text != "mp3") args.AddRange(["-q:a", "2"]);
             args.AddRange(["-id3v2_version", "3", "-f", "mp3", staged]);

@@ -2,7 +2,7 @@
 
 [中文](README.ZH.md) | English
 
-A small desktop tool that **actually converts** encrypted audio from music platforms and common audio files into MP3, for macOS (Apple Silicon).
+A small desktop tool that **actually converts** encrypted audio from music platforms, common audio files, and audio tracks from videos into MP3, for macOS (Apple Silicon).
 
 > **⚠ macOS only**: the Windows build is not part of this project's supported surface and is not described here.
 
@@ -21,6 +21,7 @@ Not a rename: when decryption yields FLAC, OGG, M4A and friends, the file is rea
 | Baidu Music | `.bkc*` |
 | Migu Music | `.mmp4` |
 | Plain audio | `.flac` `.ogg` `.oga` `.opus` `.m4a` `.aac` `.wav` `.aiff` `.wma` `.ape` |
+| Video | `.mp4` `.mkv` `.mov` `.avi` `.webm` `.flv` `.wmv` `.asf` `.m4v` `.mpg` `.mpeg` `.ts` `.mts` `.m2ts` `.3gp` `.3g2` `.vob` `.ogv` `.rm` `.rmvb` |
 
 The decryptors and FFmpeg ship inside the app (`ncmdump`, `um`, FFmpeg 8.0.3 with statically linked LAME 3.100), so nothing has to be installed.
 
@@ -30,6 +31,10 @@ The decryptors and FFmpeg ship inside the app (`ncmdump`, `um`, FFmpeg 8.0.3 wit
 2. Choose an output directory — source files are kept; same-name outputs overwrite.
 3. Conversion runs serially and can be cancelled at any time; on failure or cancellation the previous target file is left intact.
 4. Statuses (done, failed, skipped, …) are shown per row, and finished files can be revealed in Finder.
+
+The full format list stays visible at the top, with category names in the app's primary blue and extensions in gray. The output-path field keeps its active-color border when unfocused, focused, or hovered.
+
+Videos use the same window, import controls, and task list as audio. The first audio track is extracted (regardless of the default-track flag), keeping existing tags and attached cover art but discarding video frames. MP3 tracks are copied without re-encoding; other tracks are transcoded to MP3. Files without an audio track fail with an explanation, leaving the source video unchanged.
 
 ## Known limitations
 
@@ -58,6 +63,8 @@ dotnet publish src/ToMP3/ToMP3.csproj -c Release -r osx-arm64 --self-contained t
 codesign --force --deep --sign - dist/ToMP3.app
 ```
 
+The icon source is `src/ToMP3/Assets/icon.svg`. PNG, ICNS, and ICO exports must retain transparency outside the rounded corners, without a white matte. Update these assets together with the build number in `Info.plist`.
+
 ## License
 
 ToMP3 is released under the [MIT](LICENSE) license.
@@ -68,7 +75,7 @@ ToMP3 is released under the [MIT](LICENSE) license.
 |---|---|---|---|
 | [ncmdump](src/ToMP3/Assets/ncmdump/README.md) | Decrypts `.ncm` | MIT | Copyright notice + full license text (end of `Assets/ncmdump/README.md`) |
 | [um](src/ToMP3/Assets/um/README.md) | Decrypts the other vendors' private encrypted formats | MIT | Copyright notice + full license text (end of `Assets/um/README.md`) |
-| FFmpeg / ffprobe 8.0.3 | Transcoding after decryption | LGPL-2.1 | `Assets/ffmpeg/FFmpeg-LICENSE.txt` + `NOTICE.txt` (with SHA-256) |
+| FFmpeg / ffprobe 8.0.3 | Audio transcoding and video audio extraction | LGPL-2.1 | `Assets/ffmpeg/FFmpeg-LICENSE.txt` + `NOTICE.txt` (with SHA-256) |
 | LAME 3.100 | MP3 encoding | LGPL | `Assets/ffmpeg/LAME-LICENSE.txt` |
 | TagLib 2.3 (ncmdump dependency) | Audio metadata | LGPL-2.1 / MPL | `Assets/ncmdump/TagLib-LICENSE-*.txt`, `TagLib-AUTHORS.txt` |
 | zlib 1.3.1 | PNG cover decoding | zlib | Source and checksums recorded in `Assets/ffmpeg/NOTICE.txt` |

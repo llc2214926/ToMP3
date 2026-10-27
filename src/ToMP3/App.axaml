@@ -34,7 +34,7 @@
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
 
     <!-- 复用 Fluent 交互模板，统一内容对齐和圆角焦点环。 -->
-    <Style Selector="Button, ToggleButton.quiet">
+    <Style Selector="Button">
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Padding" Value="16,0" />
       <Setter Property="MinHeight" Value="40" />
@@ -103,24 +103,6 @@
       <Setter Property="Background" Value="#FECACA" />
     </Style>
 
-    <Style Selector="ToggleButton.quiet">
-      <Setter Property="MinHeight" Value="32" />
-      <Setter Property="MinWidth" Value="0" />
-      <Setter Property="Padding" Value="10,0" />
-      <Setter Property="CornerRadius" Value="8" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="Foreground" Value="#475569" />
-    </Style>
-    <Style Selector="ToggleButton.quiet:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.quiet:checked /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#E8EFFB" />
-      <Setter Property="Foreground" Value="#1D4ED8" />
-      <Setter Property="BorderBrush" Value="#D1DEF8" />
-    </Style>
-    <Style Selector="ToggleButton.quiet:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#DCE7FB" />
-    </Style>
-
     <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="#F0F2F6" />
       <Setter Property="Foreground" Value="#8A94A4" />
@@ -133,10 +115,14 @@
       <Setter Property="Padding" Value="8,6" />
     </Style>
     <Style Selector="TextBox.output">
-      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="BorderThickness" Value="{DynamicResource TextControlBorderThemeThicknessFocused}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrushFocused}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Padding" Value="0,6" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBox.output:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource TextControlBorderBrushFocused}" />
     </Style>
 
     <!-- ▍DataGrid 表头：浅灰底 + 加粗 -->
