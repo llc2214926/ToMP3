@@ -13,7 +13,11 @@ public sealed record ConvertResult(bool Ok, string Detail, string? Output = null
 /// <summary>一种「转 mp3」的转换器：认领的输入扩展名 + 单文件的转换动作。
 /// 加新格式 = 在 <see cref="FormatConvert.All"/> 里加一条，界面按扩展名自动认领，不用改界面。</summary>
 public sealed record Converter(string Name, string[] Inputs,
-    Func<string, string, CancellationToken, Task<ConvertResult>> Run);
+    Func<string, string, CancellationToken, Mp3Encoding, Task<ConvertResult>> Convert)
+{
+    public Task<ConvertResult> Run(string source, string outputDirectory, CancellationToken cancellationToken,
+        Mp3Encoding? encoding = null) => Convert(source, outputDirectory, cancellationToken, encoding ?? new());
+}
 
 /// <summary>「各种格式 → mp3」的转换器表。两个 vendor 进来的可执行文件，都不重写解密逻辑：
 /// <list type="bullet">
@@ -67,14 +71,14 @@ public static class FormatConvert
     /// `.kgm.flac`、`.vpr.flac` 也以 `.flac` 结尾，<see cref="Match"/> 取第一个命中的转换器。</summary>
     public static readonly Converter[] All =
     [
-        new Converter("网易云音乐", [".ncm"], (src, dir, ct) => ToMp3(src, dir, ct, NcmToMp3)),
+        new Converter("网易云音乐", [".ncm"], (src, dir, ct, encoding) => ToMp3(src, dir, ct, NcmToMp3, encoding)),
         .. UmGroups.Select(g => new Converter(g.Platform, g.Exts,
-            (src, dir, ct) => ToMp3(src, dir, ct, UmToAudio))),
-        new Converter("普通音频", PlainAudio, (src, dir, ct) =>
-            ToMp3(src, dir, ct, (s, _, _) => Task.FromResult(new ConvertResult(true, "", s)))),
+            (src, dir, ct, encoding) => ToMp3(src, dir, ct, UmToAudio, encoding))),
+        new Converter("普通音频", PlainAudio, (src, dir, ct, encoding) =>
+            ToMp3(src, dir, ct, (s, _, _) => Task.FromResult(new ConvertResult(true, "", s)), encoding)),
         new Converter("视频", [".mp4", ".mkv", ".mov", ".avi", ".webm", ".flv", ".wmv", ".asf",
             ".m4v", ".mpg", ".mpeg", ".ts", ".mts", ".m2ts", ".3gp", ".3g2", ".vob", ".ogv", ".rm", ".rmvb"],
-            (src, dir, ct) => ToMp3(src, dir, ct, (s, _, _) => Task.FromResult(new ConvertResult(true, "", s)))),
+            (src, dir, ct, encoding) => ToMp3(src, dir, ct, (s, _, _) => Task.FromResult(new ConvertResult(true, "", s)), encoding)),
     ];
 
     /// <summary>按扩展名找认领的转换器；不认识返回 null（界面标「跳过」）。
@@ -87,7 +91,7 @@ public static class FormatConvert
 
     // 所有输入共用：隔离中间文件，只有最终 MP3 验证成功才替换目标。
     static async Task<ConvertResult> ToMp3(string src, string outDir, CancellationToken ct,
-        Func<string, string, CancellationToken, Task<ConvertResult>> decrypt)
+        Func<string, string, CancellationToken, Task<ConvertResult>> decrypt, Mp3Encoding encoding)
     {
         if (ct.IsCancellationRequested) return ConvertResult.Fail("已取消");
         var ffmpeg = Tool("ffmpeg", "ffmpeg");
@@ -120,7 +124,7 @@ public static class FormatConvert
             var args = new List<string> { "-nostdin", "-v", "error", "-y", "-i", audio,
                 "-map", "0:a:0", "-map", "0:v:disp:attached_pic?", "-map_metadata", "0", "-c:v", "copy", "-c:a" };
             args.Add(probe.Text == "mp3" ? "copy" : "libmp3lame");
-            if (probe.Text != "mp3") args.AddRange(["-q:a", "2"]);
+            if (probe.Text != "mp3") args.AddRange(encoding.Arguments());
             args.AddRange(["-id3v2_version", "3", "-f", "mp3", staged]);
             var encoded = await Run(Command(ffmpeg, args.ToArray()), ct);
             if (encoded.Canceled) return ConvertResult.Fail("已取消");

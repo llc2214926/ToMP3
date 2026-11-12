@@ -3,6 +3,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Input;
+using Avalonia.Styling;
 using Avalonia.Threading;
 
 namespace ToMP3;
@@ -10,6 +12,65 @@ namespace ToMP3;
 public partial class App : Application
 {
     AboutWindow? _aboutWindow;
+    SettingsWindow? _settingsWindow;
+    public AppSettings Settings { get; private set; } = new();
+    public event EventHandler? SettingsChanged;
+
+    public bool UpdateSettings(AppSettings settings, out string error)
+    {
+        settings = settings.Validated();
+        try { settings.Save(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            error = Text.Get("SaveFailed", ex.Message);
+            return false;
+        }
+        Settings = settings;
+        ApplyPreferences();
+        SettingsChanged?.Invoke(this, EventArgs.Empty);
+        error = "";
+        return true;
+    }
+
+    void ApplyPreferences()
+    {
+        Text.Apply(Settings.Language, this);
+        RequestedThemeVariant = Settings.Appearance switch
+        {
+            AppAppearance.Light => ThemeVariant.Light,
+            AppAppearance.Dark => ThemeVariant.Dark,
+            _ => ThemeVariant.Default
+        };
+        if (!OperatingSystem.IsMacOS()) return;
+        var menu = new NativeMenu();
+        var about = new NativeMenuItem(Text.Get("AboutTitle"));
+        about.Click += OnAbout;
+        var settings = new NativeMenuItem(Text.Get("SettingsMenu"))
+        { Gesture = new KeyGesture(Key.OemComma, KeyModifiers.Meta) };
+        settings.Click += (_, _) => ShowSettings();
+        menu.Items.Add(about);
+        menu.Items.Add(new NativeMenuItemSeparator());
+        menu.Items.Add(settings);
+        NativeMenu.SetMenu(this, menu);
+    }
+
+    public void ShowSettings(string page = "appearance")
+    {
+        if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime { MainWindow: { } owner }) return;
+        if (_settingsWindow is null)
+        {
+            _settingsWindow = new SettingsWindow();
+            _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+            _settingsWindow.SelectPage(page);
+            _settingsWindow.Show(owner);
+        }
+        else
+        {
+            _settingsWindow.SelectPage(page);
+            _settingsWindow.WindowState = WindowState.Normal;
+            _settingsWindow.Activate();
+        }
+    }
 
     /// <summary>打开关于窗口。macOS 走原生应用菜单，Windows 走标题栏按钮，
     /// 两边都调这里，重复打开复用同一实例。</summary>
@@ -34,6 +95,8 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        Settings = AppSettings.Load();
+        ApplyPreferences();
     }
 
     public override void OnFrameworkInitializationCompleted()

@@ -1,0 +1,85 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ToMP3.SettingsWindow" Title="{DynamicResource T_Settings}"
+        Width="760" Height="556" MinWidth="700" MinHeight="530" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" Icon="/Assets/icon.png" Background="{DynamicResource BrushCard}">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Height="54" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,0,0,1" Padding="22,0">
+      <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{DynamicResource T_Settings}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" /><Button Grid.Column="1" x:Name="CloseSettingsButton" Classes="icon-button" Click="OnClose" IsCancel="True" ToolTip.Tip="{DynamicResource T_Close}" AutomationProperties.Name="{DynamicResource T_Close}"><Path Classes="icon" Data="{StaticResource IconClose}" Width="14" Height="14" /></Button></Grid>
+    </Border>
+    <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,1,0,0" Padding="20,8">
+      <StackPanel Spacing="6">
+        <TextBlock x:Name="SaveError" Foreground="{DynamicResource BrushDanger}" TextWrapping="Wrap" IsVisible="False" />
+        <Grid ColumnDefinitions="Auto,*"><Button Content="{DynamicResource T_ResetPage}" Classes="link compact" Click="OnResetPage" /><TextBlock Grid.Column="1" Text="{DynamicResource T_SettingsSaved}" Classes="caption small" Margin="14,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Right" /></Grid>
+      </StackPanel>
+    </Border>
+    <Grid ColumnDefinitions="158,*">
+      <Border Background="{DynamicResource BrushHeaderBg}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,0,1,0" Padding="11,18">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Bottom" Text="{DynamicResource T_PreferencesRemembered}" Classes="caption small" Margin="8,14,8,0" />
+          <StackPanel Spacing="5">
+            <Button x:Name="NavAppearance" Tag="appearance" Classes="nav" Click="OnPage"><Grid ColumnDefinitions="Auto,*"><Path Classes="icon" Data="{StaticResource IconSun}" Width="16" Height="16" Margin="0,0,9,0" /><TextBlock Grid.Column="1" Text="{DynamicResource T_AppearanceLanguage}" TextWrapping="Wrap" VerticalAlignment="Center" /></Grid></Button>
+            <Button x:Name="NavOutput" Tag="output" Classes="nav" Click="OnPage"><Grid ColumnDefinitions="Auto,*"><Path Classes="icon" Data="{StaticResource IconFolder}" Width="16" Height="16" Margin="0,0,9,0" /><TextBlock Grid.Column="1" Text="{DynamicResource T_Output}" TextWrapping="Wrap" VerticalAlignment="Center" /></Grid></Button>
+            <Button x:Name="NavQuality" Tag="quality" Classes="nav" Click="OnPage"><Grid ColumnDefinitions="Auto,*"><Path Classes="icon" Data="{StaticResource IconSliders}" Width="16" Height="16" Margin="0,0,9,0" /><TextBlock Grid.Column="1" Text="{DynamicResource T_Quality}" TextWrapping="Wrap" VerticalAlignment="Center" /></Grid></Button>
+            <Button x:Name="NavKeys" Tag="keys" Classes="nav" Click="OnPage"><Grid ColumnDefinitions="Auto,*"><Path Classes="icon" Data="{StaticResource IconKey}" Width="16" Height="16" Margin="0,0,9,0" /><TextBlock Grid.Column="1" Text="{DynamicResource T_Keys}" TextWrapping="Wrap" VerticalAlignment="Center" /></Grid></Button>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+      <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="25,25,25,18">
+          <StackPanel x:Name="AppearancePage" Spacing="16">
+            <StackPanel Spacing="6"><TextBlock Text="{DynamicResource T_AppearanceTitle}" Classes="section-title" /><TextBlock Text="{DynamicResource T_AppearanceHint}" Classes="caption" /></StackPanel>
+            <TextBlock Text="{DynamicResource T_Theme}" FontSize="11" FontWeight="Medium" />
+            <Grid ColumnDefinitions="*,*,*">
+              <Button x:Name="ThemeLight" Tag="Light" Classes="option theme-option" Click="OnTheme" Margin="0,0,5,0">
+                <StackPanel Spacing="9"><Border Background="#EEF1F7" BorderBrush="#D5DBE5" BorderThickness="1" Height="71" CornerRadius="5" Padding="9"><StackPanel Spacing="8"><Border Background="#ACBAD0" Width="32" Height="4" CornerRadius="2" HorizontalAlignment="Left" /><Border Background="White" BorderBrush="#DBE1EC" BorderThickness="1" CornerRadius="3" Height="34" /></StackPanel></Border><TextBlock Text="{DynamicResource T_Light}" FontSize="11" HorizontalAlignment="Center" /></StackPanel>
+              </Button>
+              <Button Grid.Column="1" x:Name="ThemeDark" Tag="Dark" Classes="option theme-option" Click="OnTheme" Margin="5,0">
+                <StackPanel Spacing="9"><Border Background="#1B202A" BorderBrush="#3B4557" BorderThickness="1" Height="71" CornerRadius="5" Padding="9"><StackPanel Spacing="8"><Border Background="#657892" Width="32" Height="4" CornerRadius="2" HorizontalAlignment="Left" /><Border Background="#303848" BorderBrush="#424B5D" BorderThickness="1" CornerRadius="3" Height="34" /></StackPanel></Border><TextBlock Text="{DynamicResource T_Dark}" FontSize="11" HorizontalAlignment="Center" /></StackPanel>
+              </Button>
+              <Button Grid.Column="2" x:Name="ThemeSystem" Tag="System" Classes="option theme-option" Click="OnTheme" Margin="5,0,0,0">
+                <StackPanel Spacing="9"><Border Height="71" CornerRadius="5" ClipToBounds="True" BorderBrush="#A5B1C3" BorderThickness="1"><Grid ColumnDefinitions="*,*"><Border Background="#EEF1F7" /><Border Grid.Column="1" Background="#1B202A" /><StackPanel Grid.ColumnSpan="2" Spacing="8" Margin="9"><Border Background="#ACBAD0" Width="32" Height="4" CornerRadius="2" HorizontalAlignment="Left" /><Border Height="34" CornerRadius="3" ClipToBounds="True"><Grid ColumnDefinitions="*,*"><Border Background="White" /><Border Grid.Column="1" Background="#303848" /></Grid></Border></StackPanel></Grid></Border><TextBlock Text="{DynamicResource T_System}" FontSize="11" HorizontalAlignment="Center" /></StackPanel>
+              </Button>
+            </Grid>
+            <Border BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,0,0,1" Padding="0,0,0,13"><Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="5" Margin="0,0,12,0"><TextBlock Text="{DynamicResource T_Language}" FontSize="11" FontWeight="Medium" /><TextBlock Text="{DynamicResource T_LanguageHint}" Classes="caption small" /></StackPanel><ComboBox Grid.Column="1" x:Name="LanguageBox" Width="148" SelectionChanged="OnLanguage"><ComboBoxItem Content="中文（简体）" /><ComboBoxItem Content="English" /></ComboBox></Grid></Border>
+            <Border Classes="information"><Grid ColumnDefinitions="Auto,*"><Path Classes="icon" Data="{StaticResource IconInfo}" Width="14" Height="14" Margin="0,3,8,0" VerticalAlignment="Top" /><TextBlock Grid.Column="1" Text="{DynamicResource T_SystemHint}" Classes="caption small" /></Grid></Border>
+          </StackPanel>
+          <StackPanel x:Name="OutputPage" Spacing="14" IsVisible="False">
+            <StackPanel Spacing="6" Margin="0,0,0,4"><TextBlock Text="{DynamicResource T_OutputTitle}" Classes="section-title" /><TextBlock Text="{DynamicResource T_OutputHint}" Classes="caption" /></StackPanel>
+            <Border x:Name="SameFolderChoice" Classes="choice-row"><RadioButton x:Name="SameFolderRadio" GroupName="output" IsCheckedChanged="OnSameFolder" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"><StackPanel Spacing="4"><TextBlock Text="{DynamicResource T_SameFolder}" FontSize="11" FontWeight="Medium" /><TextBlock Text="{DynamicResource T_SameFolderHint}" Classes="caption small" /></StackPanel></RadioButton></Border>
+            <Border x:Name="CustomFolderChoice" Classes="choice-row"><StackPanel Spacing="8"><Grid ColumnDefinitions="*,Auto"><RadioButton x:Name="CustomFolderRadio" GroupName="output" IsCheckedChanged="OnCustomFolder" HorizontalAlignment="Stretch" Margin="0,0,10,0"><TextBlock Text="{DynamicResource T_CustomFolder}" FontSize="11" FontWeight="Medium" TextWrapping="Wrap" /></RadioButton><Button Grid.Column="1" Content="{DynamicResource T_Select}" Click="OnPickOutput" Classes="compact" /></Grid><TextBlock x:Name="OutputPath" Classes="caption small" TextWrapping="Wrap" Margin="25,0,0,0" /></StackPanel></Border>
+            <Border BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,0,0,1" Padding="0,0,0,13"><Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="5" Margin="0,0,12,0"><TextBlock Text="{DynamicResource T_Overwrite}" FontSize="11" FontWeight="Medium" /><TextBlock Text="{DynamicResource T_OverwriteHint}" Classes="caption small" /></StackPanel><TextBlock Grid.Column="1" Text="{DynamicResource T_OverwriteValue}" Classes="caption" VerticalAlignment="Center" /></Grid></Border>
+            <Border Classes="information"><Grid ColumnDefinitions="Auto,*"><Path Classes="icon" Data="{StaticResource IconInfo}" Width="14" Height="14" Margin="0,3,8,0" VerticalAlignment="Top" /><TextBlock Grid.Column="1" Text="{DynamicResource T_OutputProtection}" Classes="caption small" /></Grid></Border>
+          </StackPanel>
+          <StackPanel x:Name="QualityPage" Spacing="14" IsVisible="False">
+            <StackPanel Spacing="6" Margin="0,0,0,4"><TextBlock Text="{DynamicResource T_QualityTitle}" Classes="section-title" /><TextBlock Text="{DynamicResource T_QualityHint}" Classes="caption" /></StackPanel>
+            <Grid x:Name="QualityCards" ColumnDefinitions="*,*,*">
+              <Button x:Name="QualityCompact" Tag="Compact" Classes="option" Click="OnQuality" Margin="0,0,5,0">
+                <StackPanel Spacing="7"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{DynamicResource T_Compact}" FontSize="12" FontWeight="SemiBold" /><Path Grid.Column="1" Classes="icon selection-check" Data="{StaticResource IconCheck}" Width="13" Height="13" Margin="5,0,0,0" /></Grid><TextBlock Text="{DynamicResource T_CompactDetail}" Classes="caption small" /><TextBlock Text="{DynamicResource T_VbrCompact}" Classes="caption small" /><TextBlock Text=" " FontSize="10" /></StackPanel>
+              </Button>
+              <Button Grid.Column="1" x:Name="QualityBalanced" Tag="Balanced" Classes="option" Click="OnQuality" Margin="4,0">
+                <StackPanel Spacing="7"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{DynamicResource T_BalancedCard}" FontSize="12" FontWeight="SemiBold" /><Path Grid.Column="1" Classes="icon selection-check" Data="{StaticResource IconCheck}" Width="13" Height="13" Margin="5,0,0,0" /></Grid><TextBlock Text="{DynamicResource T_BalancedDetail}" Classes="caption small" /><TextBlock Text="{DynamicResource T_VbrBalanced}" Classes="caption small" /><TextBlock Text=" " FontSize="10" /></StackPanel>
+              </Button>
+              <Button Grid.Column="2" x:Name="QualityHigh" Tag="High" Classes="option" Click="OnQuality" Margin="5,0,0,0">
+                <StackPanel Spacing="7"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{DynamicResource T_HighCard}" FontSize="12" FontWeight="SemiBold" /><Path Grid.Column="1" Classes="icon selection-check" Data="{StaticResource IconCheck}" Width="13" Height="13" Margin="5,0,0,0" /></Grid><TextBlock Text="{DynamicResource T_HighDetail}" Classes="caption small" /><TextBlock Text="{DynamicResource T_VbrHigh}" Classes="caption small" /><TextBlock Text="{DynamicResource T_DefaultQuality}" FontSize="10" Foreground="{DynamicResource BrushBlueText}" TextWrapping="Wrap" /></StackPanel>
+              </Button>
+            </Grid>
+            <TextBlock Text="{DynamicResource T_VbrHint}" Classes="caption small" />
+            <Border BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,0,0,1" Padding="0,0,0,13"><Grid ColumnDefinitions="*,Auto"><StackPanel Spacing="5" Margin="0,0,12,0"><TextBlock Text="{DynamicResource T_Bitrate}" FontSize="11" FontWeight="Medium" /><TextBlock Text="{DynamicResource T_BitrateHint}" Classes="caption small" /></StackPanel><ComboBox Grid.Column="1" x:Name="BitrateBox" Width="170" SelectionChanged="OnBitrate" VerticalAlignment="Center"><ComboBoxItem Content="{DynamicResource T_UseVbr}" /><ComboBoxItem Content="128 kbps · CBR" /><ComboBoxItem Content="192 kbps · CBR" /><ComboBoxItem Content="256 kbps · CBR" /><ComboBoxItem Content="320 kbps · CBR" /></ComboBox></Grid></Border>
+            <Border Classes="information"><Grid ColumnDefinitions="Auto,*"><Path Classes="icon" Data="{StaticResource IconInfo}" Width="14" Height="14" Margin="0,3,8,0" VerticalAlignment="Top" /><TextBlock Grid.Column="1" Text="{DynamicResource T_CopyLossyHint}" Classes="caption small" /></Grid></Border>
+          </StackPanel>
+          <StackPanel x:Name="KeysPage" Spacing="16" IsVisible="False">
+            <StackPanel Spacing="6"><TextBlock Text="{DynamicResource T_KeysTitle}" Classes="section-title" /><TextBlock Text="{DynamicResource T_KeysHint}" Classes="caption" /></StackPanel>
+            <Border Classes="card" Padding="14"><StackPanel Spacing="12">
+              <Grid ColumnDefinitions="Auto,*,Auto"><Path Classes="icon" Data="{StaticResource IconKey}" Width="16" Height="16" Margin="0,0,9,0" /><TextBlock Grid.Column="1" Text="{DynamicResource T_QqAuto}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0" /><Border Grid.Column="2" Background="{DynamicResource BrushHeaderBg}" CornerRadius="5" Padding="7,4"><TextBlock x:Name="LoginStatus" Classes="caption small" /></Border></Grid>
+              <TextBlock Text="{DynamicResource T_QqExplanation}" Classes="caption small" />
+              <TextBlock x:Name="LoginDetail" Classes="caption small" />
+              <StackPanel Orientation="Horizontal" Spacing="8"><Button x:Name="CheckLoginButton" Click="OnCheckLogin" Classes="compact"><StackPanel Orientation="Horizontal" Spacing="7"><Path Classes="icon" Data="{StaticResource IconRefresh}" Width="13" Height="13" /><TextBlock Text="{DynamicResource T_CheckLogin}" /></StackPanel></Button><Button Content="{DynamicResource T_LoginHelp}" Click="OnLoginHelp" Classes="quiet compact" /></StackPanel>
+              <TextBlock x:Name="LoginGuide" Text="{DynamicResource T_LoginGuide}" Classes="caption small" IsVisible="False" />
+            </StackPanel></Border>
+            <Border Classes="information"><Grid ColumnDefinitions="Auto,*"><Path Classes="icon" Data="{StaticResource IconInfo}" Width="14" Height="14" Margin="0,3,8,0" VerticalAlignment="Top" /><TextBlock Grid.Column="1" Text="{DynamicResource T_KeyPrivacy}" Classes="caption small" /></Grid></Border>
+          </StackPanel>
+        </Grid>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</Window>

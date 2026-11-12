@@ -26,7 +26,8 @@
 - 产品要求：成功转换后的最终输出必须是实际 MP3 音频，不能仅把扩展名改为 `.mp3`。解密得到 FLAC、OGG、M4A 等格式时，必须继续转码为 MP3；本身已是 MP3 的无需重复编码。
 - 关于窗口和其他用户可见文案必须与 MP3 输出行为一致：不能宣称保留所有输入的原始音质，应说明非 MP3 转码有损，以及已内置转换工具。
 - 按钮样式统一在 `App.axaml`：常规按钮最小高度 40、紧凑按钮 32，内容水平和垂直居中；主操作蓝底、次操作浅底、停止操作浅红底。保留悬停、按下、禁用反馈与可见的圆角键盘焦点环，窗口内不重复覆盖公共按钮样式。
-- 转换流程：在独立临时目录解密，用 ffprobe 识别编码；MP3 音轨直接复制，其他编码通过 FFmpeg 的 libmp3lame（质量参数 `-q:a 2`）转为 MP3。实际解码校验通过后才替换目标文件，失败或取消保留旧目标；临时目录移入废纸篓（Windows 是回收站）。
+- 转换流程：在独立临时目录解密，用 ffprobe 识别编码；MP3 音轨直接复制，其他编码通过 FFmpeg 的 libmp3lame 转为 MP3。`Mp3Encoding` 提供高（默认，`-q:a 0`）、标准（`-q:a 2`）、小体积（`-q:a 5`）及 CBR 128/192/256/320 kbps。启动转换时快照本批次的输出位置与品质，中途修改只影响下次开始。实际解码校验通过后才替换目标文件，失败或取消保留旧目标；临时目录移入废纸篓（Windows 是回收站）。
+- 界面采用双栏工作台：左侧表格、右侧输出/品质/密钥状态入口，完整格式列表在左下角按需展开。设置从齿轮与 macOS「ToMP3 → 设置…」（⌘,）打开，复用同一个设置窗口。主题支持浅色/深色/跟随系统（默认），语言默认中文可选英文；`Text.cs` 集中维护动态文案，`AppSettings.cs` 只保存普通偏好，绝不保存客户端凭据或歌曲密钥。
 - 输入分两类：已注册的加密格式走 `ncmdump`/`um` 解密后再转码；`flac`、`ogg`、`m4a` 等普通音频只转码不解密。`.mp3` 不认领——已是 MP3 不该重复编码，输出目录等于源目录时会覆盖用户原文件。
 - 新版 QQ 音乐（macOS 客户端 19.57+）下载的 `.mflac`/`.mgg` 文件尾是 `musicex`，密钥（ekey）不在文件里：先原样让 `um` 解一遍（老格式密钥就在文件内），失败再用 `QqEkey.cs` 联网换密钥。这条路要联网，并且要本机 QQ 音乐客户端登录过下载这些歌的账号；macOS 上客户端不需要正在运行。Windows 版的凭据来源与 macOS 不同（客户端登录态不在 plist 里），`QqEkey.cs` 目前只实现 macOS 那条路，Windows 上遇到 `musicex` 会如实报中文原因；在补上 Windows 分支前不要声称 Windows 能解这类文件。
 
@@ -35,6 +36,8 @@
 | `Program.cs` | Avalonia 启动入口 |
 | `App.axaml` / `App.axaml.cs` | 全局样式、原生应用菜单、窗口生命周期、异常日志 |
 | `AudioConvertWindow.axaml` / `AudioConvertWindow.axaml.cs` | 主界面、任务清单、拖放、串行转换、取消、按平台的文件管理器定位与标题栏分派 |
+| `SettingsWindow.axaml` / `SettingsWindow.axaml.cs` | 外观与语言、输出、品质、QQ 音乐本机登录状态与指引；检测本机凭据不代表联网验证过期或歌曲权限 |
+| `AppSettings.cs` / `Text.cs` / `Mp3Encoding.cs` | 普通设置的原子保存与安全默认值、中英文文案、不可变 MP3 编码参数 |
 | `FormatConvert.cs` | 格式注册、后缀匹配、按平台拼工具名、子进程调用、日志解析及真实产物路径 |
 | `QqEkey.cs` | 解析 `musicex` 文件尾、读客户端登录态（仅 macOS）、换 ekey、写出带旧版密钥尾的临时副本 |
 | `SourcePicker.cs` | 选输入：macOS 用可同时多选文件和文件夹的原生 `NSOpenPanel`；Windows 用系统的文件/文件夹对话框 |
@@ -54,12 +57,12 @@
 - `ncmdump` 的退出码不能证明解密成功，必须解析 `[Done]` 并验证产物存在；`um` 必须解析 `successfully converted` 日志中的 `destination` 并验证产物存在。这些检查只证明解密阶段成功，不代表最终 MP3 转换完成。
 - 当前 `um` 使用 `--overwrite`，覆盖已有产物时要如实提示；不得把“跳过已有文件”当作新转换成功。用样例副本验证，不覆盖用户原文件。
 - 「说明」列只写用户要知道的事：失败原因、覆盖提示。不影响产物的工具警告（如 `ncmdump` 的 `[Warn]`）直接标“完成”，不写说明。
-- 状态列按值上色：完成绿、失败红，其余用正文色。颜色来自 `Job.StatusBrush`，`Status` 变更要同时通知它；`DataGridTextColumn` 的 `Foreground` 是整列的，所以状态列用模板列。
+- 状态列按值上色：完成绿、失败红，其余用正文色。`Job.State` 使用与语言无关的枚举，`Status` 仅用于显示；状态、主题或语言变更要同时刷新 `StatusBrush` 和相关显示通知。`DataGridTextColumn` 的 `Foreground` 是整列的，所以状态列用模板列。
 - 单元格文字放不下时给省略号，完整内容挂悬停提示（`ToolTip.ShowDelay` 设 0，鼠标放上即显示），不硬裁切。提示经 `TipText` 转换器把空字符串变 null——`ToolTip` 只要 Tip 非 null 就会弹出空白小框；状态列放得下，本地 `ToolTip.Tip="{x:Null}"` 关掉重复提示。
 - 普通音频只做转码，不计入“加密格式”说法；界面文案写“支持 N 种格式”。加密格式必须排在 `FormatConvert.All` 中普通音频之前，否则 `.kgm.flac`、`.vpr.flac` 会被 `.flac` 抢走。
 - `musicex` 文件的 ekey 只能联网换：`QqEkey.cs` 按文件尾的歌曲 mid 和资源文件名调 `music.vkey.GetEVkey`（`filename` 必须带加密后缀、`songtype` 必须是 1），把返回的 ekey 写成临时副本的旧版「裸密钥」尾部，解密仍由 `um` 完成，不在应用里实现 QMC 算法。副本只在临时目录里，用户原文件只读。
 - 登录凭据取自 `~/Library/Preferences/com.tencent.QQMusicMac.plist` 的 `AutoLoginUserInfo`（NSKeyedArchiver），用系统 `plutil` 转换读取，只在内存里用：不落盘、不写日志、不进界面文案。
-- 需要 ekey 或外部数据库的格式不能保证仅凭扩展名就能解密。没有登录态、凭据过期、账号没有权限时必须给中文解决途径（打开 QQ 音乐登录、重新登录刷新凭据），不照抄 `no any decoder can resolve the file` 这类英文日志。
+- 需要 ekey 或外部数据库的格式不能保证仅凭扩展名就能解密。没有登录态、凭据过期、账号没有权限时必须给明确解决途径（默认中文，英文界面同步翻译应用指引），不照抄 `no any decoder can resolve the file` 这类英文日志。密钥设置只提供本机登录状态检测与指引；不展示凭据，不修改客户端数据，不提供尚未验证的手动密钥/数据库导入。
 - 不启用 `um --update-metadata`；解密与最终转码分开，FFmpeg 转码时复制已有标签和封面。调整工具版本或调用参数前先读对应的 `Assets/*/README.md`，保留来源及许可。
 - 保持串行转换、重复路径去重、完成项默认不重跑、显式重新转换清空旧状态与产物路径的行为。
 - 文件夹递归导入只收支持的格式并跳过隐藏文件名；单独加入不支持的文件应在清单中显示“跳过”，而不是静默丢弃。
@@ -88,11 +91,13 @@ Release 默认启用 `PublishTrimmed=true`、`TrimMode=partial`；界面使用�
 # 启动开发界面
  dotnet run --project src/ToMP3/ToMP3.csproj
 
-# 原生菜单、关于窗口和窄窗口布局；需要未锁定的 macOS 桌面
- dotnet run --project tests/ToMP3.Smoke/AboutSmoke.csproj
+# 原生窗口、菜单、关于窗口、转换与截图；需要未锁定的 macOS 桌面
+ dotnet run --project tests/ToMP3.Smoke/AboutSmoke.csproj -- --native artifacts/native-smoke
 
-# 仅检查窄窗口布局，仍需要图形环境
- dotnet run --project tests/ToMP3.Smoke/AboutSmoke.csproj -- --layout-only
+# 后台主题/语言/设置/窄窗口布局检查，不需要图形环境；用全新的临时 HOME 避免修改个人设置
+ dotnet build tests/ToMP3.Smoke/AboutSmoke.csproj -c Release
+ mkdir -p artifacts/smoke-home
+ HOME="$PWD/artifacts/smoke-home" dotnet tests/ToMP3.Smoke/bin/Release/net8.0/Smoke.dll --layout-only artifacts/layout-smoke
 
 # 无需图形界面的真实音频转换回归
  dotnet run --project tests/ToMP3.Smoke/AboutSmoke.csproj -- --conversion-only artifacts/mp3-smoke

@@ -26,9 +26,9 @@ internal static class SourcePicker
             Set(panel, Sel("setAllowsMultipleSelection:"), 1);
             Set(panel, Sel("setCanCreateDirectories:"), 0);
             Set(panel, Sel("setTreatsFilePackagesAsDirectories:"), 0);
-            Set(panel, Sel("setTitle:"), Text("选择文件夹/文件"));
-            Set(panel, Sel("setPrompt:"), Text("选择"));
-            Set(panel, Sel("setMessage:"), Text("可同时选择音频、视频文件和文件夹；按住 Command 多选，文件夹会递归查找支持的格式。"));
+            Set(panel, Sel("setTitle:"), Text(ToMP3.Text.Get("SelectSources")));
+            Set(panel, Sel("setPrompt:"), Text(ToMP3.Text.Get("Select")));
+            Set(panel, Sel("setMessage:"), Text(ToMP3.Text.Get("SelectHint")));
             if (Send(panel, Sel("runModal")) != 1) return [];
 
             var urls = Send(panel, Sel("URLs"));
@@ -49,7 +49,7 @@ internal static class SourcePicker
     public static async Task<string[]> PickFilesAsync(Window owner)
     {
         var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        { Title = "选择音频或视频文件", AllowMultiple = true });
+        { Title = ToMP3.Text.Get("SelectFiles"), AllowMultiple = true });
         return Paths(files);
     }
 
@@ -57,7 +57,7 @@ internal static class SourcePicker
     public static async Task<string[]> PickFoldersAsync(Window owner)
     {
         var folders = await owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-        { Title = "选择文件夹", AllowMultiple = true });
+        { Title = ToMP3.Text.Get("SelectFolders"), AllowMultiple = true });
         return Paths(folders);
     }
 

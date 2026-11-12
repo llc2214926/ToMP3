@@ -21,7 +21,7 @@ static class QqEkey
 
     /// <summary>Windows 版客户端不把登录态写进 plist，凭据来源与 macOS 完全不同
     /// （未落盘，只在客户端进程内存里），这条路还没实现。</summary>
-    const string WindowsUnsupported =
+    internal const string WindowsUnsupported =
         "Windows 版暂不支持联网取 QQ 音乐密钥：请改用 64 位 macOS 版，或在 Windows 上先手动解密这些文件";
 
     const string NeedLogin = "需要 QQ 音乐客户端的登录态：请打开 QQ 音乐，用下载这些歌的账号登录一次，再回来重新转换";
@@ -86,6 +86,9 @@ static class QqEkey
         return dst;
     }
 
+    /// <summary>只确认本机有可解析的登录态，不联网验证或公开凭据。</summary>
+    internal static async Task CheckLogin(CancellationToken ct) => _ = await Credentials(ct);
+
     /// <summary>登录凭据在 prefs 的 `AutoLoginUserInfo`：NSKeyedArchiver 编码的二进制 plist。
     /// 交给系统 plutil 转 XML 再读，不自己解 plist 格式；凭据只在内存里用，不落盘、不进日志。</summary>
     static async Task<(string Uin, string Authst, string LoginType)> Credentials(CancellationToken ct)
@@ -132,16 +135,31 @@ static class QqEkey
             RedirectStandardError = true, RedirectStandardInput = stdin is not null,
         };
         foreach (var a in args) psi.ArgumentList.Add(a);
+        ct.ThrowIfCancellationRequested();
         using var p = Process.Start(psi)!;
-        if (stdin is not null)
+        using var canceled = ct.Register(() => { try { p.Kill(true); } catch { } });
+        var stdout = p.StandardOutput.ReadToEndAsync();
+        var stderr = p.StandardError.ReadToEndAsync();
+        try
         {
-            await p.StandardInput.BaseStream.WriteAsync(stdin, ct);
-            p.StandardInput.Close();
+            if (stdin is not null)
+            {
+                await p.StandardInput.BaseStream.WriteAsync(stdin, ct);
+                p.StandardInput.Close();
+            }
         }
-        var stdout = p.StandardOutput.ReadToEndAsync(ct);
-        var stderr = p.StandardError.ReadToEndAsync(ct);
-        await p.WaitForExitAsync(ct);
-        if (p.ExitCode != 0) throw new InvalidOperationException("读 QQ 音乐登录信息失败：" + (await stderr).Trim());
+        catch (Exception) when (ct.IsCancellationRequested)
+        {
+            await p.WaitForExitAsync();
+            await Task.WhenAll(stdout, stderr);
+            ct.ThrowIfCancellationRequested();
+            throw;
+        }
+        await p.WaitForExitAsync();
+        await Task.WhenAll(stdout, stderr);
+        ct.ThrowIfCancellationRequested();
+        // 不向界面或日志传播 plutil 的原始内容，避免暴露登录数据。
+        if (p.ExitCode != 0) throw new InvalidOperationException("读 QQ 音乐登录信息失败");
         return await stdout;
     }
 

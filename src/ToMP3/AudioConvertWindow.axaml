@@ -1,166 +1,128 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="using:ToMP3"
-        x:Class="ToMP3.AudioConvertWindow" x:Name="Root"
-        Title="ToMP3"
-        Width="980" Height="700" MinWidth="800" MinHeight="640"
-        ExtendClientAreaToDecorationsHint="True"
-        ExtendClientAreaChromeHints="PreferSystemChrome,OSXThickTitleBar"
-        ExtendClientAreaTitleBarHeightHint="64"
-        WindowStartupLocation="CenterScreen"
-        FontFamily="PingFang SC, Microsoft YaHei UI, Noto Sans CJK SC, Segoe UI, sans-serif"
-        FontSize="13" Icon="/Assets/icon.png"
-        Background="{StaticResource BrushWindowBg}">
-
-  <Window.Resources>
-    <local:TipText x:Key="TipText" />
-  </Window.Resources>
-
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:ToMP3" x:Class="ToMP3.AudioConvertWindow" x:Name="Root"
+        Title="ToMP3" Width="1040" Height="680" MinWidth="900" MinHeight="640"
+        ExtendClientAreaToDecorationsHint="True" ExtendClientAreaChromeHints="PreferSystemChrome,OSXThickTitleBar"
+        ExtendClientAreaTitleBarHeightHint="54" WindowStartupLocation="CenterScreen" Icon="/Assets/icon.png">
+  <Window.Resources><local:TipText x:Key="TipText" /></Window.Resources>
   <Window.Styles>
-    <Style Selector="DataGrid">
-      <Setter Property="RowHeight" Value="40" />
-    </Style>
-    <!-- 单元格文字放不下时给省略号，并把完整内容挂成悬停提示：文件名、路径和失败原因都可能超宽，
-         硬裁切会把字切掉一半。列仍可拖宽（CanUserResizeColumns）。 -->
-    <Style Selector="DataGridCell">
-      <Setter Property="Padding" Value="12,8" />
-    </Style>
     <Style Selector="DataGridCell TextBlock">
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
       <Setter Property="ToolTip.Tip" Value="{Binding $self.Text, Converter={StaticResource TipText}}" />
-      <!-- 默认 400ms 才弹，看被截断的文字要等；鼠标放上就显示。 -->
-      <Setter Property="ToolTip.ShowDelay" Value="0" />
-      <Setter Property="ToolTip.BetweenShowDelay" Value="0" />
+      <Setter Property="ToolTip.ShowDelay" Value="0" /><Setter Property="ToolTip.BetweenShowDelay" Value="0" />
     </Style>
   </Window.Styles>
-
-  <DockPanel LastChildFill="True">
-    <!-- 原生红黄绿按钮保留在左侧，整条顶部区域与窗口使用同一背景。
-         Windows 交给系统标题栏，这一整条会隐藏（见 ApplyPlatform）。 -->
-    <Border x:Name="TitleBar" DockPanel.Dock="Top" Height="64" Background="Transparent"
-            PointerPressed="OnTitleBarPointerPressed">
-      <Grid Margin="100,0,24,0" ColumnDefinitions="Auto,*">
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" IsHitTestVisible="False">
-          <Image Source="/Assets/icon.png" Width="32" Height="32" />
-          <TextBlock Text="ToMP3" FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center"
-                     Foreground="{StaticResource BrushTextPrimary}" />
-        </StackPanel>
-        <TextBlock Grid.Column="1" Text="让音乐自由播放" FontSize="12" VerticalAlignment="Center"
-                   HorizontalAlignment="Right" IsHitTestVisible="False"
-                   Foreground="{StaticResource BrushTextSecondary}" />
+  <DockPanel>
+    <Border x:Name="TitleBar" DockPanel.Dock="Top" Height="54" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,0,0,1" Background="Transparent" PointerPressed="OnTitleBarPointerPressed">
+      <Grid Margin="100,0,20,0" ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsHitTestVisible="False"><Image Source="/Assets/icon.png" Width="24" Height="24" /><TextBlock Text="ToMP3" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" /></StackPanel>
+        <TextBlock Grid.Column="1" Text="{DynamicResource T_Tagline}" Classes="caption" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0" IsHitTestVisible="False" />
+        <Button Grid.Column="2" Classes="icon-button" Click="OnSettings" ToolTip.Tip="{DynamicResource T_Settings}" AutomationProperties.Name="{DynamicResource T_Settings}"><Path Classes="icon" Data="{StaticResource IconGear}" Width="16" Height="16" /></Button>
       </Grid>
     </Border>
-
-    <StackPanel x:Name="HeaderPanel" DockPanel.Dock="Top" Margin="24,8,24,10" Spacing="10">
-      <Grid ColumnDefinitions="*,Auto,Auto">
-        <StackPanel Spacing="5">
-          <TextBlock Text="音视频转 MP3" FontSize="24" FontWeight="SemiBold"
-                     Foreground="{StaticResource BrushTextPrimary}" />
-          <TextBlock Text="添加音频或视频文件，选择位置，开始转换。" FontSize="12"
-                     Foreground="{StaticResource BrushTextSecondary}" />
-        </StackPanel>
-        <!-- macOS 的 NSOpenPanel 能一次同选文件和文件夹；Windows 的系统对话框只能二选一，
-             所以那边显示两个按钮（可见性在构造函数里按平台切）。 -->
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,8,0">
-          <Button x:Name="BtnPickAll" Content="选择文件夹/文件" Classes="primary" Click="OnPickSources"
-                  ToolTip.Tip="可同时选择文件和文件夹；文件夹会递归查找支持的格式" />
-          <Button x:Name="BtnPickFiles" Content="选择文件" Classes="primary" Click="OnPickFiles"
-                  ToolTip.Tip="可多选；不支持的文件会标「跳过」" />
-          <Button x:Name="BtnPickFolder" Content="选择文件夹" Classes="primary" Click="OnPickFolder"
-                  ToolTip.Tip="递归查找文件夹里支持的格式，跳过隐藏文件" />
-        </StackPanel>
-        <!-- macOS 从原生应用菜单打开关于窗口；Windows 没有原生菜单，用这个按钮。 -->
-        <Button Grid.Column="2" x:Name="BtnAbout" Content="关于" Classes="quiet compact"
-                VerticalAlignment="Center" Click="OnAbout" ToolTip.Tip="关于 ToMP3" />
-      </Grid>
-
-      <Border Background="{StaticResource BrushCard}" BorderBrush="{StaticResource BrushBorder}"
-              BorderThickness="1" CornerRadius="10" Padding="12,6">
-        <StackPanel Spacing="4">
-          <TextBlock x:Name="FormatHint" TextWrapping="Wrap" FontSize="12"
-                     Foreground="{StaticResource BrushTextSecondary}" />
-          <Grid ColumnDefinitions="Auto,*,Auto">
-            <TextBlock Text="输出位置" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="12"
-                       Foreground="{StaticResource BrushTextSecondary}" />
-            <TextBox Grid.Column="1" x:Name="OutDirBox" IsReadOnly="True" Classes="output" MinHeight="28" Padding="0,4"
-                     ToolTip.Tip="默认与源文件同目录；同名文件会被覆盖" />
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" Margin="8,0,0,0">
-              <Button Content="更改位置" Classes="compact" Click="OnPickOutDir" />
-              <Button Content="恢复默认" Classes="quiet compact" Click="OnClearOutDir" ToolTip.Tip="与源文件同目录" />
+    <Grid ColumnDefinitions="*,250">
+      <Grid Margin="22,23,22,16" RowDefinitions="Auto,*,Auto,Auto">
+        <Grid x:Name="HeaderPanel" ColumnDefinitions="*,Auto" Margin="0,0,0,17">
+          <StackPanel Spacing="6"><TextBlock Text="{DynamicResource T_Workspace}" FontSize="22" FontWeight="SemiBold" /><TextBlock Text="{DynamicResource T_WorkspaceHint}" Classes="caption" Margin="0,0,10,0" /></StackPanel>
+          <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+            <Button x:Name="BtnPickAll" Click="OnPickSources" ToolTip.Tip="{DynamicResource T_AddTip}"><StackPanel Orientation="Horizontal" Spacing="7"><Path Classes="icon" Data="{StaticResource IconPlus}" Width="15" Height="15" /><TextBlock Text="{DynamicResource T_AddSources}" VerticalAlignment="Center" /></StackPanel></Button>
+            <StackPanel x:Name="WindowsActions" Orientation="Horizontal" Spacing="6">
+              <Button x:Name="BtnPickFiles" Click="OnPickFiles" Classes="compact"><StackPanel Orientation="Horizontal" Spacing="6"><Path Classes="icon" Data="{StaticResource IconPlus}" Width="13" Height="13" /><TextBlock Text="{DynamicResource T_AddFiles}" /></StackPanel></Button>
+              <Button x:Name="BtnPickFolder" Click="OnPickFolder" Classes="compact"><StackPanel Orientation="Horizontal" Spacing="6"><Path Classes="icon" Data="{StaticResource IconFolder}" Width="14" Height="14" /><TextBlock Text="{DynamicResource T_AddFolder}" /></StackPanel></Button>
             </StackPanel>
-          </Grid>
-        </StackPanel>
+            <StackPanel x:Name="WindowsInfo" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+              <Button x:Name="BtnAbout" Content="{DynamicResource T_About}" Click="OnAbout" Classes="link compact" />
+              <Button Classes="icon-button" Click="OnSettings" ToolTip.Tip="{DynamicResource T_Settings}" AutomationProperties.Name="{DynamicResource T_Settings}"><Path Classes="icon" Data="{StaticResource IconGear}" Width="16" Height="16" /></Button>
+            </StackPanel>
+          </StackPanel>
+        </Grid>
+        <Border Grid.Row="1" Classes="card" CornerRadius="10" ClipToBounds="True">
+          <DockPanel>
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,Auto,*,Auto" Height="51" Margin="15,0">
+              <TextBlock Text="{DynamicResource T_Queue}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              <Border Grid.Column="1" Background="{DynamicResource BrushHeaderBg}" CornerRadius="5" Padding="7,3" Margin="9,0,0,0" VerticalAlignment="Center"><TextBlock x:Name="CountText" Classes="caption small" /></Border>
+              <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"><Button x:Name="BtnRemove" Content="{DynamicResource T_Remove}" Classes="link compact" Click="OnRemove" /><Button x:Name="BtnClear" Content="{DynamicResource T_Clear}" Classes="link compact" Click="OnClear" /></StackPanel>
+            </Grid>
+            <StackPanel x:Name="MoreFilesHint" DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="7" Margin="16,12" IsHitTestVisible="False" IsVisible="False"><Path Classes="icon" Data="{StaticResource IconUpload}" Width="13" Height="13" /><TextBlock Text="{DynamicResource T_MoreFiles}" Classes="caption small" /></StackPanel>
+            <Grid>
+              <DataGrid x:Name="Grid" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BrushBorder}" AutoGenerateColumns="False" IsReadOnly="True" GridLinesVisibility="Horizontal" HeadersVisibility="Column" CanUserResizeColumns="True" SelectionMode="Single" FontSize="12" DoubleTapped="OnRowDoubleTapped">
+                <DataGrid.ContextMenu><ContextMenu><MenuItem x:Name="MenuReveal" Click="OnReveal" /><MenuItem x:Name="MenuRedo" Header="{DynamicResource T_Redo}" Click="OnRedo" /><Separator /><MenuItem x:Name="MenuRemove" Header="{DynamicResource T_RemoveRow}" Click="OnRemove" /></ContextMenu></DataGrid.ContextMenu>
+                <DataGrid.Columns>
+                  <DataGridTemplateColumn Header="{DynamicResource T_FileName}" SortMemberPath="Name" Width="1.4*" MinWidth="160">
+                    <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="local:Job"><Grid ColumnDefinitions="Auto,*" Margin="12,7">
+                      <Border Classes="file-icon" Classes.video="{Binding IsVideo}" Width="28" Height="31" Margin="0,0,9,0" VerticalAlignment="Center"><Path Classes="icon" Data="{Binding FileIcon}" Width="14" Height="14" /></Border>
+                      <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center"><TextBlock Text="{Binding Name}" FontWeight="Medium" /><TextBlock Text="{Binding Folder}" FontSize="10.5" Foreground="{DynamicResource BrushTextSecondary}" /></StackPanel>
+                    </Grid></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                  </DataGridTemplateColumn>
+                  <DataGridTemplateColumn Header="{DynamicResource T_Status}" SortMemberPath="Status" Width="104" MinWidth="100">
+                    <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="local:Job"><StackPanel Orientation="Horizontal" Spacing="6" Margin="12,0" VerticalAlignment="Center"><Path Classes="icon" Data="{Binding StatusIcon}" Stroke="{Binding StatusBrush}" Width="12" Height="12" /><TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}" FontSize="11" ToolTip.Tip="{x:Null}" /></StackPanel></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                  </DataGridTemplateColumn>
+                  <DataGridTemplateColumn Header="{DynamicResource T_Details}" SortMemberPath="Note" Width="1.5*" MinWidth="125">
+                    <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="local:Job"><TextBlock Text="{Binding Note}" Foreground="{Binding NoteBrush}" FontSize="11" Margin="12,0" VerticalAlignment="Center" /></DataTemplate></DataGridTemplateColumn.CellTemplate>
+                  </DataGridTemplateColumn>
+                </DataGrid.Columns>
+              </DataGrid>
+              <StackPanel x:Name="EmptyState" Spacing="11" Margin="15,34,15,0" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+                <Border Width="50" Height="50" CornerRadius="13" Background="{DynamicResource BrushBlueSoft}" HorizontalAlignment="Center"><Path Classes="icon" Data="{StaticResource IconUpload}" Width="23" Height="23" Stroke="{DynamicResource BrushBlueText}" /></Border>
+                <TextBlock Text="{DynamicResource T_EmptyTitle}" FontSize="14" FontWeight="Medium" HorizontalAlignment="Center" /><TextBlock Text="{DynamicResource T_EmptyHint}" Classes="caption" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </DockPanel>
+        </Border>
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,13,0,0" MinHeight="44">
+          <StackPanel Spacing="5" VerticalAlignment="Center" Margin="0,0,12,0">
+            <TextBlock x:Name="FooterText" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" ToolTip.ShowDelay="0" FontSize="12" />
+            <ProgressBar x:Name="BatchProgress" Minimum="0" Maximum="1" Height="3" IsVisible="False" Foreground="{DynamicResource BrushPrimary}" />
+            <TextBlock Text="{DynamicResource T_KeepSource}" Classes="caption small" />
+          </StackPanel>
+          <Button Grid.Column="1" x:Name="BtnFormats" Classes="link compact" Click="OnToggleFormats" VerticalAlignment="Center"><StackPanel Orientation="Horizontal" Spacing="7"><TextBlock Text="{DynamicResource T_Formats}" /><Path x:Name="FormatsChevron" Classes="icon" Data="{StaticResource IconChevron}" Width="10" Height="10" /></StackPanel></Button>
+        </Grid>
+        <Border Grid.Row="3" x:Name="FormatsPanel" Classes="card" IsVisible="False" Margin="0,10,0,0" Padding="8">
+          <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto"><TextBlock x:Name="FormatHint" TextWrapping="Wrap" FontSize="11" LineHeight="20" Foreground="{DynamicResource BrushTextSecondary}" /></ScrollViewer>
+        </Border>
+      </Grid>
+      <Border Grid.Column="1" Background="{DynamicResource BrushCard}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1,0,0,0" Padding="19,24,19,18">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,20"><Path Classes="icon" Data="{StaticResource IconSliders}" Width="16" Height="16" /><TextBlock Text="{DynamicResource T_Options}" FontWeight="SemiBold" /></StackPanel>
+          <StackPanel DockPanel.Dock="Bottom" Spacing="10" Margin="0,14,0,0">
+            <Border Height="1" Background="{DynamicResource BrushBorder}" Margin="0,0,0,5" />
+            <Button x:Name="BtnStart" Classes="primary" Click="OnStart" HorizontalAlignment="Stretch"><StackPanel Orientation="Horizontal" Spacing="8"><TextBlock Text="{DynamicResource T_Start}" /><Path Classes="icon" Data="{StaticResource IconArrow}" Width="15" Height="15" /></StackPanel></Button>
+            <Button x:Name="BtnStop" Classes="danger" Click="OnStop" HorizontalAlignment="Stretch" IsVisible="False"><StackPanel Orientation="Horizontal" Spacing="8"><Path Classes="icon" Data="{StaticResource IconStop}" Width="12" Height="12" /><TextBlock Text="{DynamicResource T_Stop}" /></StackPanel></Button>
+            <Button x:Name="BtnOpenOutput" Click="OnOpenOutDir" Classes="quiet" HorizontalAlignment="Stretch"><StackPanel Orientation="Horizontal" Spacing="7"><Path Classes="icon" Data="{StaticResource IconFolder}" Width="15" Height="15" /><TextBlock Text="{DynamicResource T_OpenOutput}" /></StackPanel></Button>
+          </StackPanel>
+          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="20">
+              <StackPanel Spacing="9">
+                <TextBlock Text="{DynamicResource T_Output}" Classes="muted" FontSize="11" />
+                <Border Background="{DynamicResource BrushHeaderBg}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="9" Padding="12,10">
+                  <StackPanel Spacing="7">
+                    <Grid ColumnDefinitions="*,Auto"><TextBlock x:Name="OutDirText" FontSize="12" FontWeight="Medium" TextTrimming="CharacterEllipsis" ToolTip.ShowDelay="0" Margin="0,0,8,0" /><Path Grid.Column="1" Classes="icon" Data="{StaticResource IconFolder}" Width="15" Height="15" /></Grid>
+                    <TextBlock x:Name="OutDirHint" Classes="caption small" />
+                    <Button x:Name="BtnChangeLocation" Content="{DynamicResource T_ChangeLocation}" Classes="link action-link compact" Click="OnOutputSettings" HorizontalAlignment="Left" Padding="0" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+              <StackPanel Spacing="9">
+                <TextBlock Text="{DynamicResource T_Quality}" Classes="muted" FontSize="11" />
+                <Border Background="{DynamicResource BrushHeaderBg}" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" CornerRadius="9" Padding="4">
+                  <Grid ColumnDefinitions="*,*,*">
+                    <Button x:Name="QuickCompact" Content="{DynamicResource T_Compact}" Tag="Compact" Classes="compact segment" Click="OnQuality" Margin="0,0,2,0" />
+                    <Button Grid.Column="1" x:Name="QuickBalanced" Content="{DynamicResource T_Balanced}" Tag="Balanced" Classes="compact segment" Click="OnQuality" Margin="2,0" />
+                    <Button Grid.Column="2" x:Name="QuickHigh" Content="{DynamicResource T_High}" Tag="High" Classes="compact segment" Click="OnQuality" Margin="2,0,0,0" />
+                  </Grid>
+                </Border>
+                <StackPanel Spacing="3"><TextBlock x:Name="QualityText" Classes="caption small" /><TextBlock Text="{DynamicResource T_CopyHint}" Classes="caption small" /></StackPanel>
+                <Button x:Name="BtnQualitySettings" Classes="link compact" Click="OnQualitySettings" HorizontalAlignment="Left" Padding="0"><StackPanel Orientation="Horizontal" Spacing="7"><TextBlock Text="{DynamicResource T_AdvancedQuality}" /><Path Classes="icon" Data="{StaticResource IconChevron}" Width="10" Height="10" /></StackPanel></Button>
+              </StackPanel>
+              <StackPanel Spacing="9">
+                <TextBlock Text="{DynamicResource T_KeysSignIn}" Classes="muted" FontSize="11" />
+                <Grid ColumnDefinitions="Auto,*"><Ellipse Width="6" Height="6" Fill="{DynamicResource BrushTextSecondary}" Margin="0,0,8,0" VerticalAlignment="Center" /><TextBlock Grid.Column="1" Text="{DynamicResource T_KeysSummary}" FontSize="11" TextWrapping="Wrap" /></Grid>
+                <Button x:Name="BtnKeySettings" Classes="link compact" Click="OnKeySettings" HorizontalAlignment="Left" Padding="0"><StackPanel Orientation="Horizontal" Spacing="7"><TextBlock Text="{DynamicResource T_ManageKeys}" /><Path Classes="icon" Data="{StaticResource IconChevron}" Width="10" Height="10" /></StackPanel></Button>
+              </StackPanel>
+              <TextBlock x:Name="BusyOptions" Text="{DynamicResource T_BusyOptions}" Classes="caption small" IsVisible="False" />
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
       </Border>
-    </StackPanel>
-
-    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" Margin="24,18,24,20">
-      <StackPanel Spacing="4" VerticalAlignment="Center" Margin="0,0,16,0">
-        <TextBlock x:Name="FooterText" TextTrimming="CharacterEllipsis"
-                   Foreground="{StaticResource BrushTextPrimary}" />
-        <TextBlock Text="保留源文件 · 同名输出会覆盖" FontSize="11"
-                   Foreground="{StaticResource BrushTextSecondary}" />
-      </StackPanel>
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-        <Button Content="打开输出目录" Click="OnOpenOutDir" />
-        <Button x:Name="BtnStop" Content="停止" Classes="danger" Click="OnStop" IsEnabled="False" />
-        <Button x:Name="BtnStart" Content="开始转换" Classes="primary" Click="OnStart" MinWidth="110" />
-      </StackPanel>
     </Grid>
-    <Border Margin="24,0,24,0" Background="{StaticResource BrushCard}"
-            BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="12" ClipToBounds="True">
-      <DockPanel LastChildFill="True">
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="12,4">
-          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-            <TextBlock Text="转换列表" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" />
-            <TextBlock Text="{Binding Items.Count, ElementName=Root, StringFormat='{}{0} 个文件'}"
-                       Foreground="{StaticResource BrushTextSecondary}" FontSize="12" VerticalAlignment="Center" />
-          </StackPanel>
-          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-            <Button Content="移除选中" Classes="quiet compact" Click="OnRemove" />
-            <Button Content="清空" Classes="quiet compact" Click="OnClear" />
-          </StackPanel>
-        </Grid>
-        <Grid>
-        <DataGrid x:Name="Grid" Background="Transparent" BorderThickness="0,1,0,0"
-                  BorderBrush="{StaticResource BrushBorder}" AutoGenerateColumns="False" IsReadOnly="True"
-                  GridLinesVisibility="Horizontal" HeadersVisibility="Column"
-                  CanUserResizeColumns="True" SelectionMode="Single" FontSize="12.5"
-                  DoubleTapped="OnRowDoubleTapped">
-          <DataGrid.ContextMenu>
-            <ContextMenu>
-              <MenuItem x:Name="MenuReveal" Header="在访达中显示" Click="OnReveal" />
-              <MenuItem Header="重新转换" Click="OnRedo" />
-              <Separator />
-              <MenuItem Header="移除" Click="OnRemove" />
-            </ContextMenu>
-          </DataGrid.ContextMenu>
-          <DataGrid.Columns>
-            <DataGridTextColumn x:DataType="local:Job" Header="文件名" Binding="{Binding Name}" SortMemberPath="Name" Width="2*" />
-            <DataGridTextColumn x:DataType="local:Job" Header="所在文件夹" Binding="{Binding Folder}" SortMemberPath="Folder" Width="2*" />
-            <!-- 状态要按值上色，DataGridTextColumn 的 Foreground 是整列的，只能用模板列；
-                 边距对齐 DataGridTextColumn 自己生成的 TextBlock。 -->
-            <DataGridTemplateColumn Header="状态" SortMemberPath="Status" Width="84">
-              <DataGridTemplateColumn.CellTemplate>
-                <DataTemplate x:DataType="local:Job">
-                  <!-- 状态列永远放得下，不需要悬停提示（本地值盖掉公共样式里的 Tip）。 -->
-                  <TextBlock Text="{Binding Status}" Foreground="{Binding StatusBrush}"
-                             Margin="12,0" VerticalAlignment="Center" ToolTip.Tip="{x:Null}" />
-                </DataTemplate>
-              </DataGridTemplateColumn.CellTemplate>
-            </DataGridTemplateColumn>
-            <DataGridTextColumn x:DataType="local:Job" Header="说明" Binding="{Binding Note}" SortMemberPath="Note" Width="3*" />
-          </DataGrid.Columns>
-        </DataGrid>
-        <StackPanel Spacing="10" Margin="0,32,0,0" VerticalAlignment="Center"
-                    HorizontalAlignment="Center" IsHitTestVisible="False"
-                    IsVisible="{Binding !Items.Count, ElementName=Root}">
-          <Image Source="/Assets/icon.png" Width="32" Height="32" Opacity="0.85" />
-          <TextBlock Text="把音频或视频拖到这里" FontSize="16" FontWeight="Medium" HorizontalAlignment="Center"
-                     Foreground="{StaticResource BrushTextPrimary}" />
-        </StackPanel>
-        </Grid>
-      </DockPanel>
-    </Border>
-
   </DockPanel>
 </Window>

@@ -6,7 +6,20 @@ A small desktop tool that **actually converts** encrypted audio from music platf
 
 > **⚠ macOS only**: the Windows build is not part of this project's supported surface and is not described here.
 
-Not a rename: when decryption yields FLAC, OGG, M4A and friends, the file is really transcoded with the bundled FFmpeg (libmp3lame, `-q:a 2`); files that are already MP3 are not re-encoded. Transcoding is lossy — the app never claims to preserve original audio quality.
+Not a rename: when decryption yields FLAC, OGG, M4A and similar formats, audio is transcoded with the bundled FFmpeg (libmp3lame). **High quality is the default (VBR `-q:a 0`)**; existing MP3 tracks are copied without re-encoding. Transcoding is lossy — the app never claims to preserve original audio quality.
+
+## Screenshots
+
+![ToMP3 1.1.0 workspace in English](docs/screenshots/workspace-en.png)
+
+<details>
+<summary>Audio quality settings</summary>
+
+![ToMP3 1.1.0 audio quality settings in English](docs/screenshots/settings-en.png)
+
+</details>
+
+These images are offscreen renders of the real Avalonia window controls from the 1.1.0 (build 4) published assemblies, using generated audio samples. They are not HTML mockups; OS window buttons and native menus are not included.
 
 ## Supported formats
 
@@ -25,21 +38,34 @@ Not a rename: when decryption yields FLAC, OGG, M4A and friends, the file is rea
 
 The decryptors and FFmpeg ship inside the app (`ncmdump`, `um`, FFmpeg 8.0.3 with statically linked LAME 3.100), so nothing has to be installed.
 
+## 1.1.0: workspace and settings
+
+Manage the queue on the left and choose output settings on the right. Expand the supported-format list at the bottom left when needed.
+
+- **Settings:** the gear in the upper-right corner, or **ToMP3 → Settings…** in the macOS app menu (`⌘,`).
+- **Appearance and language:** Light, Dark, or System (default). The interface defaults to Chinese; choose English in Settings. Changes apply immediately.
+- **Output location:** alongside each source, or a shared destination folder. Cancelling the picker leaves settings unchanged.
+- **Audio quality:** High (default, VBR 0), Balanced (VBR 2), or Compact (VBR 5). Advanced settings offer fixed CBR at 128 / 192 / 256 / 320 kbps.
+- **Key management:** check local QQ Music sign-in information and view sign-in help. Raw credentials are never displayed, saved, or exported; song keys are not cached. Manual key and database import are not available in this release.
+
+Preferences are saved automatically to `~/Library/Application Support/ToMP3/settings.json`. Theme and language changes are immediate. Each batch keeps the output location and quality selected when conversion starts; changes made during conversion apply to the next batch.
+
+Quality settings affect only audio that needs encoding. MP3 is lossy; higher quality cannot recover detail already lost in the source, and does not guarantee smaller files.
+
 ## Usage
 
-1. Drag files or whole folders into the window (or pick them from the native menu).
-2. Choose an output directory — source files are kept; same-name outputs overwrite.
-3. Conversion runs serially and can be cancelled at any time; on failure or cancellation the previous target file is left intact.
-4. Statuses (done, failed, skipped, …) are shown per row, and finished files can be revealed in Finder.
-
-The full format list stays visible at the top, with category names in the app's primary blue and extensions in gray. The output-path field keeps its active-color border when unfocused, focused, or hovered.
+1. Drag files or whole folders into the window, or click **Add files / folders** to use the system picker.
+2. Choose the output location and quality on the right. Source files are kept; same-name outputs are replaced.
+3. Click **Start conversion**. Files are processed serially; **Stop conversion** cancels the current operation. Failure or cancellation leaves the previous target intact.
+4. Statuses are shown per row. Double-click a row or use its context menu to reveal the file in Finder. Completed items do not rerun unless you choose **Convert again**.
 
 Videos use the same window, import controls, and task list as audio. The first audio track is extracted (regardless of the default-track flag), keeping existing tags and attached cover art but discarding video frames. MP3 tracks are copied without re-encoding; other tracks are transcoded to MP3. Files without an audio track fail with an explanation, leaving the source video unchanged.
 
 ## Known limitations
 
 - Newer QQ Music (macOS client 19.57+) stores the key of downloaded `.mflac`/`.mgg` files outside the file, so decrypting them needs network access and a QQ Music account that was signed in on this machine when the song was downloaded.
-- Without a signed-in session, with expired credentials, or without permission for the account, the app gives a Chinese explanation and next steps instead of the raw English error.
+- Missing sign-in, expired credentials, and permission failures have guidance in the selected interface language. “Local sign-in found” only confirms local credential availability; expiry and song permissions are checked during conversion.
+- Formats requiring an external database, such as some KuGou `.kgg` files, cannot be guaranteed by extension alone. This release has no database-import option.
 - `.mp3` inputs are not claimed: an MP3 is not re-encoded.
 - Linux and mobile platforms are out of scope.
 
