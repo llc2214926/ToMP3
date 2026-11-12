@@ -1,10 +1,11 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="ToMP3.SettingsWindow" Title="{DynamicResource T_Settings}"
         Width="760" Height="556" MinWidth="700" MinHeight="530" ShowInTaskbar="False"
+        ExtendClientAreaChromeHints="PreferSystemChrome,OSXThickTitleBar" ExtendClientAreaTitleBarHeightHint="54"
         WindowStartupLocation="CenterOwner" Icon="/Assets/icon.png" Background="{DynamicResource BrushCard}">
   <DockPanel>
-    <Border DockPanel.Dock="Top" Height="54" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,0,0,1" Padding="22,0">
-      <Grid ColumnDefinitions="*,Auto"><TextBlock Text="{DynamicResource T_Settings}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" /><Button Grid.Column="1" x:Name="CloseSettingsButton" Classes="icon-button" Click="OnClose" IsCancel="True" ToolTip.Tip="{DynamicResource T_Close}" AutomationProperties.Name="{DynamicResource T_Close}"><Path Classes="icon" Data="{StaticResource IconClose}" Width="14" Height="14" /></Button></Grid>
+    <Border x:Name="SettingsTitleBar" DockPanel.Dock="Top" Height="54" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,0,0,1" Padding="22,0" Background="Transparent">
+      <Grid ColumnDefinitions="*,Auto"><TextBlock x:Name="SettingsTitle" Text="{DynamicResource T_Settings}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" IsHitTestVisible="False" /><Button Grid.Column="1" x:Name="CloseSettingsButton" Classes="icon-button" Click="OnClose" IsCancel="True" ToolTip.Tip="{DynamicResource T_Close}" AutomationProperties.Name="{DynamicResource T_Close}"><Path Classes="icon" Data="{StaticResource IconClose}" Width="14" Height="14" /></Button></Grid>
     </Border>
     <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource BrushBorder}" BorderThickness="0,1,0,0" Padding="20,8">
       <StackPanel Spacing="6">

@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 
 namespace ToMP3;
@@ -13,6 +14,12 @@ public partial class AboutWindow : Window
     public AboutWindow()
     {
         InitializeComponent();
+        if (OperatingSystem.IsMacOS())
+        {
+            ExtendClientAreaToDecorationsHint = true;
+            AboutTitleBar.IsVisible = true;
+            AboutTitleBar.PointerPressed += OnTitleBarPointerPressed;
+        }
         using var stream = typeof(AboutWindow).Assembly.GetManifestResourceStream("ToMP3.Info.plist")!;
         var metadata = XDocument.Load(stream).Root!.Element("dict")!.Elements("key")
             .ToDictionary(key => key.Value, key => key.ElementsAfterSelf().First().Value);
@@ -32,6 +39,13 @@ public partial class AboutWindow : Window
         VersionText.Text = Text.Get("Version", _version, _build);
         PlatformText.Text = $"{(OperatingSystem.IsWindows() ? "Windows" : "macOS")} · "
             + $"{RuntimeInformation.ProcessArchitecture} · {Text.Get("FormatCount", FormatConvert.Count)}";
+    }
+
+    void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed || e.Handled) return;
+        e.Handled = true;
+        BeginMoveDrag(e);
     }
 
     void OnClose(object? sender, RoutedEventArgs e) => Close();

@@ -1,5 +1,7 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Platform.Storage;
 
 namespace ToMP3;
@@ -18,10 +20,27 @@ public partial class SettingsWindow : Window
     {
         _app = (App)Avalonia.Application.Current!;
         InitializeComponent();
+        if (OperatingSystem.IsMacOS())
+        {
+            ExtendClientAreaToDecorationsHint = true;
+            SettingsTitleBar.Padding = new(100, 0);
+            SettingsTitle.HorizontalAlignment = HorizontalAlignment.Center;
+            CloseSettingsButton.IsVisible = false;
+            SettingsTitleBar.PointerPressed += OnTitleBarPointerPressed;
+            KeyDown += (_, e) => { if (e.Key == Key.Escape) { e.Handled = true; Close(); } };
+        }
         _app.SettingsChanged += OnSettingsChanged;
         Closed += (_, _) => { _app.SettingsChanged -= OnSettingsChanged; _lifetime.Cancel(); _lifetime.Dispose(); };
         Refresh();
         SelectPage(_page);
+    }
+
+    void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed || e.Handled) return;
+        e.Handled = true;
+        if (e.ClickCount == 2) WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+        else BeginMoveDrag(e);
     }
 
     public void SelectPage(string page)
